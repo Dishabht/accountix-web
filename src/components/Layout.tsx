@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
+import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   LayoutDashboard, 
@@ -23,12 +23,13 @@ import {
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth/login" replace />;
   }
 
   const getNavigationGroups = (role: string) => {
@@ -117,6 +118,11 @@ export default function Layout() {
     }));
   };
 
+  const handleSignOut = () => {
+    logout();
+    navigate('/auth/login', { replace: true });
+  };
+
   return (
     <div className="h-screen bg-slate-50 flex overflow-hidden">
       {/* Sidebar */}
@@ -183,7 +189,7 @@ export default function Layout() {
               </div>
             </div>
             <button
-              onClick={logout}
+              onClick={handleSignOut}
               className="flex items-center w-full px-3 py-2 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-colors"
             >
               <LogOut className="mr-3 h-5 w-5 text-slate-400" />

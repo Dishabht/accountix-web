@@ -8,7 +8,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3001;
+  const HMR_PORT = Number(process.env.VITE_HMR_PORT) || 24679;
 
   app.use(express.json());
 
@@ -32,6 +33,66 @@ async function startServer() {
   // --- API Routes ---
 
   // Auth
+  app.post('/api/auth/register', async (req, res) => {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+
+    if (typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    try {
+      const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email) as { id: number } | undefined;
+      if (existingUser) {
+        return res.status(409).json({ error: 'An account with this email already exists' });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const result = db.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').run(name, email, hashedPassword, 'customer_user');
+
+      const user = {
+        id: Number(result.lastInsertRowid),
+        name,
+        email,
+        role: 'customer_user',
+      };
+
+      const token = jwt.sign(
+        { id: user.id, role: user.role, name: user.name, email: user.email },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      return res.status(201).json({ token, user });
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message || 'Unable to create account' });
+    }
+  });
+
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    try {
+      const user = db.prepare('SELECT id FROM users WHERE email = ?').get(email) as { id: number } | undefined;
+
+      // Keep response generic to avoid exposing whether an email exists.
+      if (!user) {
+        return res.json({ message: 'If an account exists for this email, a recovery email has been sent.' });
+      }
+
+      return res.json({ message: 'If an account exists for this email, a recovery email has been sent.' });
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message || 'Unable to process password recovery request' });
+    }
+  });
+
   app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
@@ -641,7 +702,13 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: {
+          port: HMR_PORT,
+          clientPort: HMR_PORT,
+        },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
