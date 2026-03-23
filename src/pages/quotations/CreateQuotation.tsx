@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, FolderKanban, Clock, DollarSign, Save } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function CreateQuotation() {
   const { token } = useAuth();
   const navigate = useNavigate();
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     customerId: '',
     projectId: '',
@@ -23,6 +25,22 @@ export default function CreateQuotation() {
       totalAmount: prev.rate * prev.estimatedDuration
     }));
   }, [formData.rate, formData.estimatedDuration]);
+
+  useEffect(() => {
+    fetch('/api/customers', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((res) => res.json())
+      .then(setCustomers)
+      .catch(console.error);
+
+    fetch('/api/projects', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((res) => res.json())
+      .then(setProjects)
+      .catch(console.error);
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,9 +96,11 @@ export default function CreateQuotation() {
                   onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
                 >
                   <option value="">Select a customer</option>
-                  <option value="1">Acme Corp</option>
-                  <option value="2">Globex Corporation</option>
-                  <option value="3">Soylent Corp</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -98,9 +118,11 @@ export default function CreateQuotation() {
                   onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
                 >
                   <option value="">Select a project</option>
-                  <option value="1">Website Redesign</option>
-                  <option value="2">Mobile App Development</option>
-                  <option value="3">Cloud Migration</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

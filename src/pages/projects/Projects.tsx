@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Plus, Search, X, Briefcase, Eye, CheckCircle2, XCircle, FolderKanban } from 'lucide-react';
 
 export default function Projects() {

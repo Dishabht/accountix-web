@@ -1,104 +1,96 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Plus, Search, Check, X, Edit2, Trash2, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Plus, Search, X, Edit2, Trash2, Users, Briefcase, UserCheck } from 'lucide-react';
 
-export default function Attendance() {
+export default function Employees() {
   const { token, user } = useAuth();
-  const [attendance, setAttendance] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [recordToDelete, setRecordToDelete] = useState<number | null>(null);
+  const [employeeToDelete, setEmployeeToDelete] = useState<number | null>(null);
   
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [managers, setManagers] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
     id: null as number | null,
-    employee_id: '',
-    date: '',
-    hours: '',
-    status: 'pending'
+    name: '',
+    email: '',
+    password: '',
+    title: '',
+    supplier_id: '',
+    manager_id: ''
   });
 
-  const fetchAttendance = () => {
-    fetch('/api/attendance', {
+  const fetchEmployees = () => {
+    fetch('/api/employees', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
-      .then(data => setAttendance(data))
+      .then(data => setEmployees(data))
       .catch(console.error)
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    fetchAttendance();
+    fetchEmployees();
     
-    fetch('/api/employees', { headers: { Authorization: `Bearer ${token}` } })
+    // Fetch dropdown data
+    fetch('/api/suppliers', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
-      .then(setEmployees);
+      .then(setSuppliers);
+      
+    fetch('/api/users?role=manager', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(setManagers);
   }, [token]);
 
-  const filteredAttendance = useMemo(() => {
-    return attendance.filter(a => {
-      const matchesSearch = a.employee_name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'All' || a.status === statusFilter.toLowerCase();
-      return matchesSearch && matchesStatus;
-    });
-  }, [attendance, searchTerm, statusFilter]);
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(emp => 
+      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.title && emp.title.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [employees, searchTerm]);
 
   const stats = useMemo(() => {
     return {
-      total: attendance.length,
-      pending: attendance.filter(a => a.status === 'pending').length,
-      approved: attendance.filter(a => a.status === 'approved').length,
-      rejected: attendance.filter(a => a.status === 'rejected').length,
+      total: employees.length,
+      managers: employees.filter(e => e.title && e.title.toLowerCase().includes('manager')).length,
+      suppliers: employees.filter(e => e.supplier_id).length,
     };
-  }, [attendance]);
-
-  const handleStatusUpdate = async (id: number, status: string) => {
-    try {
-      await fetch(`/api/attendance/${id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ status })
-      });
-      fetchAttendance();
-    } catch (error) {
-      console.error('Failed to update status', error);
-    }
-  };
+  }, [employees]);
 
   const openAddModal = () => {
-    setFormData({ id: null, employee_id: '', date: new Date().toISOString().split('T')[0], hours: '', status: 'pending' });
+    setFormData({ id: null, name: '', email: '', password: '', title: '', supplier_id: '', manager_id: '' });
     setIsModalOpen(true);
   };
 
-  const openEditModal = (record: any) => {
+  const openEditModal = (emp: any) => {
     setFormData({ 
-      id: record.id, 
-      employee_id: record.employee_id || '', 
-      date: record.date || '', 
-      hours: record.hours || '', 
-      status: record.status || 'pending' 
+      id: emp.id, 
+      name: emp.name, 
+      email: emp.email, 
+      password: '', // Don't populate password for editing
+      title: emp.title || '', 
+      supplier_id: emp.supplier_id || '', 
+      manager_id: emp.manager_id || '' 
     });
     setIsModalOpen(true);
   };
 
   const openDeleteModal = (id: number) => {
-    setRecordToDelete(id);
+    setEmployeeToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const url = formData.id ? `/api/attendance/${formData.id}` : '/api/attendance';
+      const url = formData.id ? `/api/employees/${formData.id}` : '/api/employees';
       const method = formData.id ? 'PUT' : 'POST';
       
       const res = await fetch(url, {
@@ -112,35 +104,35 @@ export default function Attendance() {
       
       if (res.ok) {
         setIsModalOpen(false);
-        fetchAttendance();
+        fetchEmployees();
       } else {
         const error = await res.json();
         alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error('Failed to save attendance record', error);
+      console.error('Failed to save employee', error);
     }
   };
 
   const handleDelete = async () => {
-    if (!recordToDelete) return;
+    if (!employeeToDelete) return;
     
     try {
-      const res = await fetch(`/api/attendance/${recordToDelete}`, {
+      const res = await fetch(`/api/employees/${employeeToDelete}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (res.ok) {
         setIsDeleteModalOpen(false);
-        setRecordToDelete(null);
-        fetchAttendance();
+        setEmployeeToDelete(null);
+        fetchEmployees();
       } else {
         const error = await res.json();
         alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error('Failed to delete attendance record', error);
+      console.error('Failed to delete employee', error);
     }
   };
 
@@ -150,8 +142,8 @@ export default function Attendance() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Attendance</h2>
-          <p className="text-slate-500 mt-1">Manage and review employee attendance records.</p>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Employees</h2>
+          <p className="text-slate-500 mt-1">Manage employee profiles and assignments.</p>
         </div>
         {canManage && (
           <button 
@@ -159,54 +151,43 @@ export default function Attendance() {
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
-            New Record
+            Add Employee
           </button>
         )}
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Total Records</p>
+              <p className="text-sm font-medium text-slate-500">Total Employees</p>
               <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
             </div>
             <div className="p-3 bg-indigo-50 rounded-lg">
-              <Clock className="w-6 h-6 text-indigo-600" />
+              <Users className="w-6 h-6 text-indigo-600" />
             </div>
           </div>
         </div>
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Pending</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.pending}</h3>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <AlertCircle className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Approved</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.approved}</h3>
+              <p className="text-sm font-medium text-slate-500">Managers</p>
+              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.managers}</h3>
             </div>
             <div className="p-3 bg-emerald-50 rounded-lg">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+              <UserCheck className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
         </div>
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Rejected</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.rejected}</h3>
+              <p className="text-sm font-medium text-slate-500">Supplier Employees</p>
+              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.suppliers}</h3>
             </div>
-            <div className="p-3 bg-red-50 rounded-lg">
-              <XCircle className="w-6 h-6 text-red-600" />
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <Briefcase className="w-6 h-6 text-blue-600" />
             </div>
           </div>
         </div>
@@ -221,31 +202,21 @@ export default function Attendance() {
             <input
               type="text"
               className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Search records..."
+              placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select
-            className="border border-slate-300 rounded-lg text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="All">All Statuses</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-          </select>
         </div>
         
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Employee</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Hours</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Title</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Supplier</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Manager</th>
                 {canManage && (
                   <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                 )}
@@ -256,59 +227,41 @@ export default function Attendance() {
                 <tr>
                   <td colSpan={canManage ? 5 : 4} className="px-6 py-4 text-center text-sm text-slate-500">Loading...</td>
                 </tr>
-              ) : filteredAttendance.length === 0 ? (
+              ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={canManage ? 5 : 4} className="px-6 py-4 text-center text-sm text-slate-500">No attendance records found.</td>
+                  <td colSpan={canManage ? 5 : 4} className="px-6 py-4 text-center text-sm text-slate-500">No employees found.</td>
                 </tr>
               ) : (
-                filteredAttendance.map((record) => (
-                  <tr key={record.id} className="hover:bg-slate-50">
+                filteredEmployees.map((emp) => (
+                  <tr key={emp.id} className="hover:bg-slate-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-900">{record.employee_name}</div>
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                          {emp.name.charAt(0)}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-slate-900">{emp.name}</div>
+                          <div className="text-sm text-slate-500">{emp.email}</div>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{record.date}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{record.hours}h</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        record.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        record.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                      </span>
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{emp.title || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{emp.supplier_name || 'Direct'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{emp.manager_name || 'None'}</td>
                     {canManage && (
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2 items-center">
-                          {record.status === 'pending' && (
-                            <>
-                              <button 
-                                onClick={() => handleStatusUpdate(record.id, 'approved')}
-                                className="text-green-600 hover:text-green-900 bg-green-50 p-1.5 rounded-md"
-                                title="Approve"
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleStatusUpdate(record.id, 'rejected')}
-                                className="text-red-600 hover:text-red-900 bg-red-50 p-1.5 rounded-md"
-                                title="Reject"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
+                        <div className="flex justify-end space-x-2">
                           <button 
-                            onClick={() => openEditModal(record)}
-                            className="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 ml-2"
-                            title="Edit Record"
+                            onClick={() => openEditModal(emp)}
+                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
+                            title="Edit Employee"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button 
-                            onClick={() => openDeleteModal(record.id)}
-                            className="text-red-600 hover:text-red-900 p-1.5 rounded-md hover:bg-red-50"
-                            title="Delete Record"
+                            onClick={() => openDeleteModal(emp.id)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                            title="Delete Employee"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -323,8 +276,7 @@ export default function Attendance() {
         </div>
       </div>
 
-
-      {/* Add/Edit Attendance Modal */}
+      {/* Add/Edit Employee Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -334,7 +286,7 @@ export default function Attendance() {
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="flex justify-between items-center mb-5">
                   <h3 className="text-lg leading-6 font-medium text-slate-900" id="modal-title">
-                    {formData.id ? 'Edit Attendance Record' : 'Create New Record'}
+                    {formData.id ? 'Edit Employee' : 'Add New Employee'}
                   </h3>
                   <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-500">
                     <X className="w-5 h-5" />
@@ -342,52 +294,73 @@ export default function Attendance() {
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700">Employee</label>
+                    <label className="block text-sm font-medium text-slate-700">Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      className="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      className="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  {!formData.id && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Password</label>
+                      <input
+                        type="password"
+                        required
+                        value={formData.password}
+                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        className="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Job Title</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      className="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Supplier</label>
                     <select
                       required
-                      value={formData.employee_id}
-                      onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
+                      value={formData.supplier_id}
+                      onChange={(e) => setFormData({...formData, supplier_id: e.target.value})}
                       className="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     >
-                      <option value="">Select an employee</option>
-                      {employees.map(emp => (
-                        <option key={emp.id} value={emp.id}>{emp.name} - {emp.title}</option>
+                      <option value="">Select a supplier</option>
+                      {suppliers.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700">Date</label>
-                    <input
-                      type="date"
-                      required
-                      value={formData.date}
-                      onChange={(e) => setFormData({...formData, date: e.target.value})}
-                      className="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Hours</label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="0.5"
-                      value={formData.hours}
-                      onChange={(e) => setFormData({...formData, hours: e.target.value})}
-                      className="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Status</label>
+                    <label className="block text-sm font-medium text-slate-700">Manager</label>
                     <select
                       required
-                      value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value})}
+                      value={formData.manager_id}
+                      onChange={(e) => setFormData({...formData, manager_id: e.target.value})}
                       className="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     >
-                      <option value="pending">Pending</option>
-                      <option value="approved">Approved</option>
-                      <option value="rejected">Rejected</option>
+                      <option value="">Select a manager</option>
+                      {managers.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="pt-4 flex justify-end space-x-3">
@@ -402,7 +375,7 @@ export default function Attendance() {
                       type="submit"
                       className="bg-indigo-600 py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                      {formData.id ? 'Update Record' : 'Save Record'}
+                      {formData.id ? 'Update Employee' : 'Save Employee'}
                     </button>
                   </div>
                 </form>
@@ -426,11 +399,11 @@ export default function Attendance() {
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                     <h3 className="text-lg leading-6 font-medium text-slate-900" id="modal-title">
-                      Delete Record
+                      Delete Employee
                     </h3>
                     <div className="mt-2">
                       <p className="text-sm text-slate-500">
-                        Are you sure you want to delete this attendance record? This action cannot be undone.
+                        Are you sure you want to delete this employee? This action cannot be undone and will remove their access to the system.
                       </p>
                     </div>
                   </div>

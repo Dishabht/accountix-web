@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { ArrowLeft, Edit2, Trash2, X, Save } from 'lucide-react';
 
 export default function InvoiceDetails() {

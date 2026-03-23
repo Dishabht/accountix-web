@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Briefcase, FolderKanban, DollarSign, Clock, Calendar, Edit2, Trash2 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function QuotationDetails() {
   const { id } = useParams<{ id: string }>();

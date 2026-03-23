@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Plus, Search, X, Edit2, Trash2, ClipboardList, DollarSign, Users } from 'lucide-react';
 
 export default function Assignments() {

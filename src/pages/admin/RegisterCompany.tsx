@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, User, MapPin, Globe, FileText, Save, Upload, X, ArrowLeft, CheckCircle2, Activity } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function RegisterCompany() {
   const { id } = useParams();

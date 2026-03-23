@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Plus, Search, Eye, FileText, CheckCircle2, Send, Clock } from 'lucide-react';
 
 export default function Invoices() {

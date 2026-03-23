@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Plus, FileText, Briefcase, FolderKanban, DollarSign, Eye, Clock, Send, CheckCircle2, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function QuotationList() {
   const { token } = useAuth();
