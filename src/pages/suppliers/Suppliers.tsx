@@ -1,22 +1,25 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Search, X, Edit2, Trash2, Building2, UserCheck, UserX } from 'lucide-react';
+import { api } from '../../services/api';
+import { Supplier, Project } from '../../types';
+import { Plus, Search, X, Edit2, Trash2, Building2, UserCheck, UserX, ArrowUp, ArrowDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function Suppliers() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [supplierToDelete, setSupplierToDelete] = useState<number | null>(null);
-  const [availableProjects, setAvailableProjects] = useState<any[]>([]);
+  const [supplierToDelete, setSupplierToDelete] = useState<string | null>(null);
+  const [availableProjects, setAvailableProjects] = useState<Project[]>([]);
   
   const [formData, setFormData] = useState({
-    id: null as number | null,
+    id: null as string | null,
     name: '',
     contact_info: '',
     address: '',
@@ -29,20 +32,22 @@ export default function Suppliers() {
     services: [] as string[]
   });
 
-  const fetchSuppliers = () => {
-    fetch('/api/suppliers', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setSuppliers(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+  // Fetch all suppliers from API
+  const fetchSuppliers = async () => {
+    try {
+      const data = await api.get('/suppliers', token);
+      setSuppliers(data);
+    } catch (error) {
+      console.error('Failed to fetch suppliers:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchSuppliers();
-    fetch('/api/projects', { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.json())
+    // Fetch available projects for dropdown
+    api.get('/projects', token)
       .then(setAvailableProjects)
       .catch(console.error);
   }, [token]);
@@ -64,11 +69,47 @@ export default function Suppliers() {
     };
   }, [suppliers]);
 
+  const statCards: DashpanelCardData[] = [
+    {
+      title: 'Total Suppliers',
+      value: stats.total.toString(),
+      icon: Building2,
+      iconBg: 'bg-cyan-600',
+      gradientFrom: 'from-cyan-600/10',
+      growth: '+0%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'registered suppliers',
+    },
+    {
+      title: 'With Projects',
+      value: stats.withProject.toString(),
+      icon: UserCheck,
+      iconBg: 'bg-purple-600',
+      gradientFrom: 'from-purple-600/10',
+      growth: `${stats.total > 0 ? ((stats.withProject / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'project linked',
+    },
+    {
+      title: 'Without Projects',
+      value: stats.withoutProject.toString(),
+      icon: UserX,
+      iconBg: 'bg-[#487FFF]',
+      gradientFrom: 'from-[#487FFF]/10',
+      growth: `${stats.total > 0 ? ((stats.withoutProject / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowDown,
+      growthColor: 'text-red-600',
+      description: 'awaiting assignment',
+    },
+  ];
+
   const openAddModal = () => {
     navigate('/companies/add?type=supplier');
   };
 
-  const openEditModal = (supplier: any) => {
+  const openEditModal = (supplier: Supplier) => {
     let services = [];
     try {
       services = JSON.parse(supplier.services || '[]');
@@ -78,7 +119,7 @@ export default function Suppliers() {
     setFormData({ 
       id: supplier.id, 
       name: supplier.name, 
-      contact_info: supplier.contact_info,
+      contact_info: supplier.contact_info || '',
       address: supplier.address || '',
       city: supplier.city || '',
       postal_code: supplier.postal_code || '',
@@ -91,7 +132,7 @@ export default function Suppliers() {
     setIsModalOpen(true);
   };
 
-  const openDeleteModal = (id: number) => {
+  const openDeleteModal = (id: string) => {
     setSupplierToDelete(id);
     setIsDeleteModalOpen(true);
   };
@@ -168,42 +209,7 @@ export default function Suppliers() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Suppliers</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
-            </div>
-            <div className="p-3 bg-indigo-50 rounded-lg">
-              <Building2 className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">With Projects</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.withProject}</h3>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
-              <UserCheck className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Without Projects</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.withoutProject}</h3>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <UserX className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">

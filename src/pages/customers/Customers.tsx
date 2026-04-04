@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Search, X, Edit2, Trash2, Users, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Plus, Search, X, Edit2, Trash2, Users, CheckCircle2, XCircle, Clock, ArrowUp, ArrowDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function Customers() {
   const { token, user } = useAuth();
@@ -113,6 +114,53 @@ export default function Customers() {
     }).length
   };
 
+  const statCards: DashpanelCardData[] = [
+    {
+      title: 'Total Customers',
+      value: stats.total.toString(),
+      icon: Users,
+      iconBg: 'bg-cyan-600',
+      gradientFrom: 'from-cyan-600/10',
+      growth: '+12%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'from last month',
+    },
+    {
+      title: 'Active',
+      value: stats.active.toString(),
+      icon: CheckCircle2,
+      iconBg: 'bg-purple-600',
+      gradientFrom: 'from-purple-600/10',
+      growth: `${stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowUp,
+      growthColor: 'text-red-600',
+      description: 'of total base',
+    },
+    {
+      title: 'Inactive',
+      value: stats.inactive.toString(),
+      icon: XCircle,
+      iconBg: 'bg-[#487FFF]',
+      gradientFrom: 'from-[#487FFF]/10',
+      growth: `${stats.total > 0 ? ((stats.inactive / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowDown,
+      growthColor: 'text-green-600',
+      description: 'churn rate',
+    },
+    {
+      title: 'New This Month',
+      value: stats.new.toString(),
+      icon: Clock,
+      iconBg: 'bg-green-600',
+      gradientFrom: 'from-green-600/10',
+      growth: `+${stats.new}`,
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'new this month',
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -131,72 +179,7 @@ export default function Customers() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Customers</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
-            </div>
-            <div className="p-3 bg-indigo-50 rounded-lg">
-              <Users className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm text-emerald-600">
-            <span className="font-medium">+12%</span>
-            <span className="text-slate-400 ml-1">from last month</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Active</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.active}</h3>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm text-slate-500">
-            <span className="font-medium">{((stats.active / stats.total) * 100).toFixed(0)}%</span>
-            <span className="ml-1">of total base</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Inactive</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.inactive}</h3>
-            </div>
-            <div className="p-3 bg-red-50 rounded-lg">
-              <XCircle className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm text-slate-500">
-            <span className="font-medium">{((stats.inactive / stats.total) * 100).toFixed(0)}%</span>
-            <span className="ml-1">churn rate</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">New This Month</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">3</h3>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <Clock className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm text-amber-600">
-            <span className="font-medium">Target: 5</span>
-            <span className="text-slate-400 ml-1">remaining</span>
-          </div>
-        </div>
-      </div>
+      <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50">

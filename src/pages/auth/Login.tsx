@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
 import { Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 
 export default function Login() {
@@ -19,16 +20,11 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      // Call centralized API service instead of direct fetch
+      const data = await api.post('/auth/login', null, { email, password });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Login failed');
+      if (!data || data.error) {
+        throw new Error(data?.error || 'Login failed');
       }
 
       login(data.token, data.user, rememberMe);
@@ -47,7 +43,7 @@ export default function Login() {
       <div className="lg:w-1/2 py-8 px-6 flex flex-col justify-center">
         <div className="lg:max-w-[464px] mx-auto w-full">
           <div>
-            <Link to="/auth/login" className="mb-3 inline-flex items-center gap-3">
+            <Link to="/login" className="mb-3 inline-flex items-center gap-3">
               <span className="text-xl font-semibold tracking-tight text-slate-900">Accountability</span>
             </Link>
             <h2 className="text-3xl font-bold text-slate-900">Sign In to your Account</h2>
@@ -111,7 +107,7 @@ export default function Login() {
                 />
                 Remember me
               </label>
-              <Link to="/auth/forgot-password" className="text-indigo-600 font-medium hover:underline text-sm">
+              <Link to="/forgot-password" className="text-indigo-600 font-medium hover:underline text-sm">
                 Forgot Password?
               </Link>
             </div>
@@ -127,7 +123,7 @@ export default function Login() {
 
             <p className="mt-8 text-center text-sm text-slate-500">
               Don&apos;t have an account?{' '}
-              <Link to="/auth/register" className="text-indigo-600 font-semibold hover:underline">
+              <Link to="/register" className="text-indigo-600 font-semibold hover:underline">
                 Sign Up
               </Link>
             </p>

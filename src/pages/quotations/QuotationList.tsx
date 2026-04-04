@@ -2,29 +2,33 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Plus, FileText, Briefcase, FolderKanban, DollarSign, Eye, Clock, Send, CheckCircle2, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
+import { Quotation } from '../../types';
 
 export default function QuotationList() {
   const { token } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [quotations, setQuotations] = useState<any[]>([]);
+  const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/quotations', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setQuotations(data))
+    // Fetch all quotations from API using centralized service
+    api.get('/quotations', token)
+      .then(data => setQuotations(Array.isArray(data) ? data : []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [token]);
 
   const filteredQuotations = useMemo(() => {
     return quotations.filter(q => {
-      const matchesSearch = q.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            q.project_name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'All' || q.status === statusFilter;
+      const customerName = (q.customer_name || '').toLowerCase();
+      const projectName = (q.project_name || '').toLowerCase();
+      const status = q.status || '';
+
+      const matchesSearch = customerName.includes(searchTerm.toLowerCase()) ||
+                            projectName.includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'All' || status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [quotations, searchTerm, statusFilter]);

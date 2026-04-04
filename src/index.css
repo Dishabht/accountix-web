@@ -1,1 +1,7 @@
 @import "tailwindcss";
+
+@layer components {
+	.card {
+		@apply h-full rounded-lg border-transparent bg-white p-6;
+	}
+}

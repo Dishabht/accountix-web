@@ -10,13 +10,66 @@ import {
   DollarSign,
   Activity,
   ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { 
   Tooltip, Legend, ResponsiveContainer, 
   PieChart, Pie, Cell 
 } from 'recharts';
+import { MetricCard, ChartCard } from '../components/dashboard';
 
 const COLORS = ['#06B6D4', '#9333EA', '#487FFF', '#16A34A', '#22C55E', '#6366F1', '#0EA5E9', '#A855F7', '#14B8A6'];
+
+const RADIAN = Math.PI / 180;
+
+const renderDonutPercentLabel = ({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+}: {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  percent?: number;
+}) => {
+  if (
+    cx === undefined ||
+    cy === undefined ||
+    midAngle === undefined ||
+    innerRadius === undefined ||
+    outerRadius === undefined ||
+    percent === undefined
+  ) {
+    return null;
+  }
+
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  if (percent < 0.05) {
+    return null;
+  }
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#fff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={12}
+      fontWeight={700}
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
 
 export default function Dashboard() {
   const { token } = useAuth();
@@ -163,7 +216,7 @@ export default function Dashboard() {
         show: false,
       },
     },
-    colors: ['#06B6D4', '#9333EA'],
+    colors: ['#16A34A', '#487FFF'],
     legend: {
       show: true,
       position: 'top',
@@ -207,15 +260,76 @@ export default function Dashboard() {
     },
   };
 
-  const financialCategories = charts.financials.map((item: any) => item.name);
+  useEffect(() => {
+    if (!token) return;
+
+    fetch('/api/dashboard/stats', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`Stats error: ${res.status}`);
+        return res.json();
+      })
+      .then(data => setStats(data))
+      .catch(error => {
+        console.error('Stats fetch error:', error);
+        // Garder les données par défaut
+      });
+
+    fetch('/api/dashboard/charts', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`Charts error: ${res.status}`);
+        return res.json();
+      })
+      .then(data => setCharts(data))
+      .catch(error => {
+        console.error('Charts fetch error:', error);
+        // Garder les données par défaut
+      });
+  }, [token]);
+
+  const demoEmployeeDistribution = [
+    { name: 'TechCorp Ltd', value: 32 },
+    { name: 'Global Staff', value: 26 },
+    { name: 'Prime Solutions', value: 22 },
+    { name: 'Outsource Pro', value: 20 },
+  ];
+
+  const demoFinancials = [
+    { name: 'Jan', income: 4200, expense: 2800 },
+    { name: 'Feb', income: 5100, expense: 3400 },
+    { name: 'Mar', income: 4700, expense: 3200 },
+    { name: 'Apr', income: 5900, expense: 3900 },
+    { name: 'May', income: 6300, expense: 4300 },
+    { name: 'Jun', income: 7100, expense: 4700 },
+  ];
+
+  const employeeDistributionData =
+    Array.isArray(charts.employeeDistribution) && charts.employeeDistribution.length > 0
+      ? charts.employeeDistribution
+      : demoEmployeeDistribution;
+
+  const financialOverviewData =
+    (Array.isArray(charts.financials) && charts.financials.length > 0
+      ? charts.financials
+      : demoFinancials
+    ).map((item: any, index: number) => ({
+      name: item?.name || item?.month || item?.label || `M${index + 1}`,
+      income: Number(item?.income ?? item?.revenue ?? 0),
+      expense: Number(item?.expense ?? item?.expenses ?? 0),
+    }));
+
+  const financialCategories = financialOverviewData.map((item) => item.name);
   const financialColumnSeries = [
     {
       name: 'Income',
-      data: charts.financials.map((item: any) => Number(item?.income) || 0),
+      data: financialOverviewData.map((item) => item.income),
     },
     {
       name: 'Expense',
-      data: charts.financials.map((item: any) => Number(item?.expense) || 0),
+      data: financialOverviewData.map((item) => item.expense),
     },
   ];
 
@@ -227,7 +341,7 @@ export default function Dashboard() {
         show: false,
       },
     },
-    colors: ['#487FFF', '#16A34A'],
+    colors: ['#06B6D4', '#9333EA'],
     legend: {
       show: true,
       position: 'top',
@@ -270,22 +384,6 @@ export default function Dashboard() {
       },
     },
   };
-
-  useEffect(() => {
-    fetch('/api/dashboard/stats', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setStats(data))
-      .catch(console.error);
-
-    fetch('/api/dashboard/charts', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setCharts(data))
-      .catch(console.error);
-  }, [token]);
 
   const metricCards = [
     {
@@ -373,38 +471,19 @@ export default function Dashboard() {
       <div className="p-0">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {metricCards.map((card) => (
-            <div
-              key={card.title}
-              className={`bg-gradient-to-r ${card.gradientFrom} to-white border border-slate-200 rounded-md p-4 shadow-sm hover:shadow-md transition-shadow duration-200`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-neutral-500">{card.title}</p>
-                  <h3 className="text-2xl font-bold text-neutral-900 mt-1">{card.value}</h3>
-                </div>
-                <div className={`w-12 h-12 ${card.iconBg} rounded-full flex items-center justify-center`}>
-                  <card.icon className="text-white" size={22} />
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm mt-4">
-                <span className={`flex items-center gap-1 ${card.growthColor}`}>
-                  <card.growthIcon className="w-3.5 h-3.5" />
-                  {card.growth}
-                </span>
-                <span className="text-neutral-500 text-xs">{card.description}</span>
-              </div>
-            </div>
+            <MetricCard key={card.title} {...card} />
           ))}
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         {/* Revenue vs Expenses - Line Chart */}
-        <div className="bg-white p-6 h-full rounded-lg border border-transparent xl:col-span-6">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
-            <DollarSign className="w-5 h-5 mr-2 text-primary" />
-            Revenue vs Expenses Trend
-          </h3>
+        <ChartCard 
+          title="Revenue vs Expenses Trend"
+          icon={DollarSign}
+          iconColor="text-primary"
+          colSpan="xl:col-span-6"
+        >
           <div className="h-80">
             <div className="-m-2">
               <Chart
@@ -415,15 +494,16 @@ export default function Dashboard() {
               />
             </div>
           </div>
-        </div>
+        </ChartCard>
 
         {/* Project Status Distribution */}
-        <div className="bg-white p-6 h-full rounded-lg border border-transparent xl:col-span-6">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
-            <Activity className="w-5 h-5 mr-2 text-amber-500" />
-            Project Status Distribution
-          </h3>
-          <div className="h-80">
+        <ChartCard
+          title="Project Status Distribution"
+          icon={Activity}
+          iconColor="text-amber-500"
+          colSpan="xl:col-span-6"
+        >
+          <div className="h-80 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -433,27 +513,39 @@ export default function Dashboard() {
                   innerRadius={80}
                   outerRadius={120}
                   fill="#8884d8"
-                  paddingAngle={5}
+                  paddingAngle={0}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={renderDonutPercentLabel}
+                  labelLine={false}
                 >
                   {projectStatusData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
+          <ul className="flex flex-wrap items-center justify-center mt-3 gap-4">
+            {projectStatusData.map((item, index) => (
+              <li key={item.name} className="flex items-center gap-2 text-xs text-neutral-600 font-semibold">
+                <span
+                  className="w-3 h-2 rounded-[50rem]"
+                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                />
+                {item.name}: <span className="text-neutral-900 font-bold">{item.value}</span>
+              </li>
+            ))}
+          </ul>
+        </ChartCard>
 
         {/* Weekly Attendance */}
-        <div className="bg-white p-6 h-full rounded-lg border border-transparent xl:col-span-12">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
-            <Users className="w-5 h-5 mr-2 text-blue-500" />
-            Weekly Attendance Overview
-          </h3>
+        <ChartCard
+          title="Weekly Attendance Overview"
+          icon={Users}
+          iconColor="text-blue-500"
+          colSpan="xl:col-span-12"
+        >
           <div className="h-80">
             <div className="-m-2">
               <Chart
@@ -464,39 +556,57 @@ export default function Dashboard() {
               />
             </div>
           </div>
-        </div>
+        </ChartCard>
 
         {/* Employees by Supplier */}
-        <div className="bg-white p-6 h-full rounded-lg border border-transparent xl:col-span-6">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Employees by Supplier</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={charts.employeeDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={120}
-                  fill="#8884d8"
-                  paddingAngle={5}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {charts.employeeDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[(index + 4) % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Legend iconType="circle" />
-              </PieChart>
-            </ResponsiveContainer>
+        <ChartCard
+          title="Employees by Supplier"
+          colSpan="xl:col-span-6"
+        >
+          <div>
+            <div className="h-72 -m-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={employeeDistributionData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={80}
+                    outerRadius={120}
+                    fill="#8884d8"
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={false}
+                  >
+                    {employeeDistributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[(index + 4) % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <ul className="flex flex-wrap items-center justify-center mt-3 gap-4">
+              {employeeDistributionData.slice(0, 4).map((item, index) => (
+                <li key={item.name} className="flex items-center gap-2 text-xs text-neutral-600 font-semibold">
+                  <span
+                    className="w-3 h-2 rounded-[50rem]"
+                    style={{ backgroundColor: COLORS[(index + 4) % COLORS.length] }}
+                  />
+                  {item.name}: <span className="text-neutral-900 font-bold">{item.value}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
+        </ChartCard>
 
         {/* Financial Overview (Original Dashboard Chart) */}
-        <div className="bg-white p-6 h-full rounded-lg border border-transparent xl:col-span-6">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Financial Overview (Income vs Expense)</h3>
+        <ChartCard
+          title="Financial Overview (Income vs Expense)"
+          icon={DollarSign}
+          iconColor="text-blue-500"
+          colSpan="xl:col-span-6"
+        >
           <div className="h-80">
             <div className="-m-2">
               <Chart
@@ -507,7 +617,7 @@ export default function Dashboard() {
               />
             </div>
           </div>
-        </div>
+        </ChartCard>
       </div>
     </div>
   );

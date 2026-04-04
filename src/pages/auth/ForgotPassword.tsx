@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
 import { Loader2, Mail } from 'lucide-react';
 
 export default function ForgotPassword() {
@@ -15,19 +16,13 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+      const data = await api.post('/auth/forgot-password', null, { email });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Unable to send recovery email');
+      if (!data || data.error) {
+        throw new Error(data?.error || 'Unable to send recovery email');
       }
 
-      navigate('/auth/login', { replace: true });
+      navigate('/login', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Unable to send recovery email');
     } finally {
@@ -42,7 +37,7 @@ export default function ForgotPassword() {
       <div className="lg:w-1/2 py-8 px-6 flex flex-col justify-center">
         <div className="lg:max-w-[464px] mx-auto w-full">
           <div>
-            <Link to="/auth/login" className="mb-3 inline-flex items-center gap-3">
+            <Link to="/login" className="mb-3 inline-flex items-center gap-3">
               <span className="text-xl font-semibold tracking-tight text-slate-900">Accountability</span>
             </Link>
             <h2 className="text-3xl font-bold text-slate-900">Forgot Password</h2>
@@ -82,7 +77,7 @@ export default function ForgotPassword() {
 
             <p className="mt-8 text-center text-sm text-slate-500">
               Remembered your password?{' '}
-              <Link to="/auth/login" className="text-indigo-600 font-semibold hover:underline">
+              <Link to="/login" className="text-indigo-600 font-semibold hover:underline">
                 Back to Sign In
               </Link>
             </p>

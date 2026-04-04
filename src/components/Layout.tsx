@@ -29,10 +29,10 @@ export default function Layout() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   if (!user) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
-  const getNavigationGroups = (role: string) => {
+  const getNavigationGroups = () => {
     const groups = [
       {
         name: 'Dashboard',
@@ -46,7 +46,6 @@ export default function Layout() {
         name: 'Customer Management',
         items: [
           { name: 'Customers List', href: '/customers', icon: Briefcase, roles: ['super_admin', 'admin', 'manager'] },
-          { name: 'Customer Requests', href: '/customer-requests', icon: FileText, roles: ['super_admin', 'admin', 'manager', 'customer_user'] },
           { name: 'Projects', href: '/projects', icon: FolderKanban, roles: ['super_admin', 'admin', 'manager', 'customer_user'] },
           { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['super_admin', 'admin', 'finance', 'customer_user'] },
         ]
@@ -92,16 +91,27 @@ export default function Layout() {
       }
     ];
 
-    return groups.map(group => ({
-      ...group,
-      items: group.items.filter(item => item.roles.includes(role))
-    })).filter(group => group.items.length > 0);
+    return groups;
   };
 
-  const navigationGroups = getNavigationGroups(user.role);
+  const navigationGroups = getNavigationGroups();
+
+  const ensureGroupsExpanded = () => {
+    setExpandedGroups(prev => {
+      if (Object.keys(prev).length > 0) return prev;
+
+      const initialState: Record<string, boolean> = {};
+      navigationGroups.forEach(group => {
+        initialState[group.name] = true;
+      });
+      return initialState;
+    });
+  };
 
   // Auto-expand the group that contains the current active route
   useEffect(() => {
+    ensureGroupsExpanded();
+
     const activeGroup = navigationGroups.find(group => 
       group.items.some(item => item.href === location.pathname)
     );
@@ -120,7 +130,7 @@ export default function Layout() {
 
   const handleSignOut = () => {
     logout();
-    navigate('/auth/login', { replace: true });
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -128,14 +138,41 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:relative lg:flex lg:flex-col lg:shrink-0`}>
         <div className="h-full flex flex-col">
-          <div className="flex items-center justify-between h-16 px-4 bg-slate-950 shrink-0">
-            <h1 className="text-xl font-bold tracking-tight">Accountability</h1>
+          <div className="flex items-center justify-end h-16 px-4 bg-slate-950 shrink-0">
             <button className="lg:hidden" onClick={() => setIsMobileMenuOpen(false)}>
               <X className="w-6 h-6" />
             </button>
           </div>
           
           <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto">
+            <div className="mb-3">
+              <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Quick Access
+              </div>
+              <div className="mt-1 space-y-1">
+                {[
+                  { name: 'Invoices', href: '/invoices', icon: FileText },
+                  { name: 'Quotation List', href: '/quotations', icon: FileText },
+                ].map((item) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
             {navigationGroups.map((group) => {
               const isExpanded = expandedGroups[group.name];
               return (

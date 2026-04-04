@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
+import { Customer } from '../../types';
 import { ArrowLeft, Save } from 'lucide-react';
 
 export default function CreateInvoice() {
   const { token } = useAuth();
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [saving, setSaving] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -18,8 +20,8 @@ export default function CreateInvoice() {
   });
 
   useEffect(() => {
-    fetch('/api/customers', { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.json())
+    // Fetch customers for dropdown
+    api.get('/customers', token)
       .then(setCustomers)
       .catch(console.error);
   }, [token]);

@@ -1,22 +1,25 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Search, X, Edit2, Trash2, Users, Briefcase, UserCheck } from 'lucide-react';
+import { api } from '../../services/api';
+import { Employee, Supplier } from '../../types';
+import { Plus, Search, X, Edit2, Trash2, Users, Briefcase, UserCheck, ArrowUp, ArrowDown } from 'lucide-react';
+import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function Employees() {
   const { token, user } = useAuth();
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [employeeToDelete, setEmployeeToDelete] = useState<number | null>(null);
+  const [employeeToDelete, setEmployeeToDelete] = useState<string | null>(null);
   
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [managers, setManagers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [managers, setManagers] = useState<Employee[]>([]);
   
   const [formData, setFormData] = useState({
-    id: null as number | null,
+    id: null as string | null,
     name: '',
     email: '',
     password: '',
@@ -25,27 +28,24 @@ export default function Employees() {
     manager_id: ''
   });
 
-  const fetchEmployees = () => {
-    fetch('/api/employees', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setEmployees(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+  // Fetch all employees from API
+  const fetchEmployees = async () => {
+    try {
+      const data = await api.get('/employees', token);
+      setEmployees(data);
+    } catch (error) {
+      console.error('Failed to fetch employees:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchEmployees();
     
-    // Fetch dropdown data
-    fetch('/api/suppliers', { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.json())
-      .then(setSuppliers);
-      
-    fetch('/api/users?role=manager', { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.json())
-      .then(setManagers);
+    // Fetch dropdown data using centralized API service
+    api.get('/suppliers', token).then(setSuppliers);
+    api.get('/users?role=manager', token).then(setManagers);
   }, [token]);
 
   const filteredEmployees = useMemo(() => {
@@ -63,6 +63,42 @@ export default function Employees() {
       suppliers: employees.filter(e => e.supplier_id).length,
     };
   }, [employees]);
+
+  const statCards: DashpanelCardData[] = [
+    {
+      title: 'Total Employees',
+      value: stats.total.toString(),
+      icon: Users,
+      iconBg: 'bg-cyan-600',
+      gradientFrom: 'from-cyan-600/10',
+      growth: '+0%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'employee records',
+    },
+    {
+      title: 'Managers',
+      value: stats.managers.toString(),
+      icon: UserCheck,
+      iconBg: 'bg-purple-600',
+      gradientFrom: 'from-purple-600/10',
+      growth: `${stats.total > 0 ? ((stats.managers / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'lead roles',
+    },
+    {
+      title: 'Supplier Employees',
+      value: stats.suppliers.toString(),
+      icon: Briefcase,
+      iconBg: 'bg-[#487FFF]',
+      gradientFrom: 'from-[#487FFF]/10',
+      growth: `${stats.total > 0 ? ((stats.suppliers / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowDown,
+      growthColor: 'text-red-600',
+      description: 'external staff',
+    },
+  ];
 
   const openAddModal = () => {
     setFormData({ id: null, name: '', email: '', password: '', title: '', supplier_id: '', manager_id: '' });
@@ -156,42 +192,7 @@ export default function Employees() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Employees</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
-            </div>
-            <div className="p-3 bg-indigo-50 rounded-lg">
-              <Users className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Managers</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.managers}</h3>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
-              <UserCheck className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Supplier Employees</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.suppliers}</h3>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <Briefcase className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">

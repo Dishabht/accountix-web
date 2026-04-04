@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Download, Filter } from 'lucide-react';
+import { Download, Filter, CheckCircle2, XCircle, Clock, FileText, ArrowUp, ArrowDown } from 'lucide-react';
+import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function AttendanceReports() {
   const [reportType, setReportType] = useState('employee');
@@ -19,6 +20,58 @@ export default function AttendanceReports() {
   ];
 
   const data = reportType === 'employee' ? employeeData : projectData;
+
+  const totalPresent = data.reduce((sum, item) => sum + item.present, 0);
+  const totalAbsent = data.reduce((sum, item) => sum + item.absent, 0);
+  const totalHalfDay = data.reduce((sum, item) => sum + item.halfDay, 0);
+  const totalLeaves = data.reduce((sum, item) => sum + item.leave, 0);
+
+  const statCards: DashpanelCardData[] = [
+    {
+      title: 'Total Present Days',
+      value: totalPresent.toString(),
+      icon: CheckCircle2,
+      iconBg: 'bg-cyan-600',
+      gradientFrom: 'from-cyan-600/10',
+      growth: '+12%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'from last month',
+    },
+    {
+      title: 'Total Absent Days',
+      value: totalAbsent.toString(),
+      icon: XCircle,
+      iconBg: 'bg-purple-600',
+      gradientFrom: 'from-purple-600/10',
+      growth: '+2%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-red-600',
+      description: 'from last month',
+    },
+    {
+      title: 'Total Half Days',
+      value: totalHalfDay.toString(),
+      icon: Clock,
+      iconBg: 'bg-[#487FFF]',
+      gradientFrom: 'from-[#487FFF]/10',
+      growth: '-5%',
+      growthIcon: ArrowDown,
+      growthColor: 'text-green-600',
+      description: 'from last month',
+    },
+    {
+      title: 'Total Leaves',
+      value: totalLeaves.toString(),
+      icon: FileText,
+      iconBg: 'bg-green-600',
+      gradientFrom: 'from-green-600/10',
+      growth: '0%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-slate-500',
+      description: 'same as last month',
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -57,36 +110,7 @@ export default function AttendanceReports() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-sm font-medium text-slate-500">Total Present Days</h3>
-          <p className="text-3xl font-bold text-slate-900 mt-2">135</p>
-          <p className="text-sm text-emerald-600 mt-1 flex items-center">
-            ↑ 12% from last month
-          </p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-sm font-medium text-slate-500">Total Absent Days</h3>
-          <p className="text-3xl font-bold text-slate-900 mt-2">7</p>
-          <p className="text-sm text-red-600 mt-1 flex items-center">
-            ↑ 2% from last month
-          </p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-sm font-medium text-slate-500">Total Half Days</h3>
-          <p className="text-3xl font-bold text-slate-900 mt-2">3</p>
-          <p className="text-sm text-emerald-600 mt-1 flex items-center">
-            ↓ 5% from last month
-          </p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-sm font-medium text-slate-500">Total Leaves</h3>
-          <p className="text-3xl font-bold text-slate-900 mt-2">3</p>
-          <p className="text-sm text-slate-500 mt-1 flex items-center">
-            Same as last month
-          </p>
-        </div>
-      </div>
+      <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
         <h3 className="text-lg font-bold text-slate-900 mb-6">

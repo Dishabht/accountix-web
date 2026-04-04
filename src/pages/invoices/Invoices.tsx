@@ -1,24 +1,28 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Search, Eye, FileText, CheckCircle2, Send, Clock } from 'lucide-react';
+import { api } from '../../services/api';
+import { Invoice } from '../../types';
+import { Plus, Search, Eye, FileText, CheckCircle2, Send, Clock, ArrowUp, ArrowDown } from 'lucide-react';
+import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function Invoices() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
-  const [invoices, setInvoices] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const fetchInvoices = () => {
-    fetch('/api/invoices', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setInvoices(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+  const fetchInvoices = async () => {
+    try {
+      const data = await api.get('/invoices', token);
+      setInvoices(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch invoices:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -27,9 +31,13 @@ export default function Invoices() {
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter(invoice => {
-      const matchesSearch = invoice.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            `INV-${invoice.id.toString().padStart(4, '0')}`.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'All' || invoice.status === statusFilter.toLowerCase();
+      const customerName = (invoice.customer_name || '').toLowerCase();
+      const invoiceId = `INV-${String(invoice.id ?? '').padStart(4, '0')}`.toLowerCase();
+      const invoiceStatus = (invoice.status || '').toLowerCase();
+
+      const matchesSearch = customerName.includes(searchTerm.toLowerCase()) ||
+                            invoiceId.includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'All' || invoiceStatus === statusFilter.toLowerCase();
       return matchesSearch && matchesStatus;
     });
   }, [invoices, searchTerm, statusFilter]);
@@ -37,11 +45,58 @@ export default function Invoices() {
   const stats = useMemo(() => {
     return {
       total: invoices.length,
-      paid: invoices.filter(i => i.status === 'paid').length,
-      sent: invoices.filter(i => i.status === 'sent').length,
-      draft: invoices.filter(i => i.status === 'draft').length,
+      paid: invoices.filter(i => (i.status || '').toLowerCase() === 'paid').length,
+      sent: invoices.filter(i => (i.status || '').toLowerCase() === 'sent').length,
+      draft: invoices.filter(i => (i.status || '').toLowerCase() === 'draft').length,
     };
   }, [invoices]);
+
+  const statCards: DashpanelCardData[] = [
+    {
+      title: 'Total Invoices',
+      value: stats.total.toString(),
+      icon: FileText,
+      iconBg: 'bg-cyan-600',
+      gradientFrom: 'from-cyan-600/10',
+      growth: '+0%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'all invoices',
+    },
+    {
+      title: 'Paid',
+      value: stats.paid.toString(),
+      icon: CheckCircle2,
+      iconBg: 'bg-purple-600',
+      gradientFrom: 'from-purple-600/10',
+      growth: `${stats.total > 0 ? ((stats.paid / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'payment completed',
+    },
+    {
+      title: 'Sent',
+      value: stats.sent.toString(),
+      icon: Send,
+      iconBg: 'bg-[#487FFF]',
+      gradientFrom: 'from-[#487FFF]/10',
+      growth: `${stats.total > 0 ? ((stats.sent / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'awaiting payment',
+    },
+    {
+      title: 'Draft',
+      value: stats.draft.toString(),
+      icon: Clock,
+      iconBg: 'bg-green-600',
+      gradientFrom: 'from-green-600/10',
+      growth: `${stats.total > 0 ? ((stats.draft / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowDown,
+      growthColor: 'text-red-600',
+      description: 'not sent yet',
+    },
+  ];
 
   const canManage = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'manager' || user?.role === 'finance';
 
@@ -63,53 +118,7 @@ export default function Invoices() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Invoices</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
-            </div>
-            <div className="p-3 bg-indigo-50 rounded-lg">
-              <FileText className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Paid</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.paid}</h3>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Sent</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.sent}</h3>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <Send className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Draft</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.draft}</h3>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-lg">
-              <Clock className="w-6 h-6 text-slate-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
@@ -160,23 +169,30 @@ export default function Invoices() {
                   <td colSpan={7} className="px-6 py-4 text-center text-sm text-slate-500">No invoices found.</td>
                 </tr>
               ) : (
-                filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-slate-50">
+                filteredInvoices.map((invoice, index) => (
+                  <tr key={invoice.id ?? `row-${index}`} className="hover:bg-slate-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-900">INV-{invoice.id.toString().padStart(4, '0')}</div>
+                      <div className="text-sm font-medium text-slate-900">INV-{String(invoice.id ?? '').padStart(4, '0')}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{invoice.customer_name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">${invoice.amount.toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{invoice.issue_date}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{invoice.due_date}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{invoice.customer_name || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">${Number(invoice.amount || 0).toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{invoice.issue_date || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{invoice.due_date || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      {(() => {
+                        const invoiceStatus = (invoice.status || 'draft').toLowerCase();
+                        const statusLabel = invoiceStatus.charAt(0).toUpperCase() + invoiceStatus.slice(1);
+
+                        return (
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        invoice.status === 'paid' ? 'bg-green-100 text-green-800' : 
-                        invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' : 
+                        invoiceStatus === 'paid' ? 'bg-green-100 text-green-800' : 
+                        invoiceStatus === 'sent' ? 'bg-blue-100 text-blue-800' : 
                         'bg-slate-100 text-slate-800'
                       }`}>
-                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                        {statusLabel}
                       </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">

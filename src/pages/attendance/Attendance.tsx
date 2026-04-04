@@ -1,44 +1,49 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Search, Check, X, Edit2, Trash2, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { api } from '../../services/api';
+import { Attendance as AttendanceRecord, Employee } from '../../types';
+import { Plus, Search, Check, X, Edit2, Trash2, Clock, CheckCircle2, XCircle, AlertCircle, ArrowUp, ArrowDown } from 'lucide-react';
+import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function Attendance() {
   const { token, user } = useAuth();
-  const [attendance, setAttendance] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [recordToDelete, setRecordToDelete] = useState<number | null>(null);
+  const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   
   const [formData, setFormData] = useState({
-    id: null as number | null,
+    id: null as string | null,
     employee_id: '',
     date: '',
     hours: '',
     status: 'pending'
   });
 
-  const fetchAttendance = () => {
-    fetch('/api/attendance', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setAttendance(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+  // Fetch attendance records from API
+  const fetchAttendance = async () => {
+    try {
+      const data = await api.get('/attendance', token);
+      setAttendance(data);
+    } catch (error) {
+      console.error('Failed to fetch attendance:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchAttendance();
-    
-    fetch('/api/employees', { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.json())
-      .then(setEmployees);
+    // Fetch employees for dropdown
+    api.get('/employees', token)
+      .then(setEmployees)
+      .catch(console.error);
   }, [token]);
 
   const filteredAttendance = useMemo(() => {
@@ -57,6 +62,53 @@ export default function Attendance() {
       rejected: attendance.filter(a => a.status === 'rejected').length,
     };
   }, [attendance]);
+
+  const statCards: DashpanelCardData[] = [
+    {
+      title: 'Total Records',
+      value: stats.total.toString(),
+      icon: Clock,
+      iconBg: 'bg-cyan-600',
+      gradientFrom: 'from-cyan-600/10',
+      growth: '+0%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'attendance entries',
+    },
+    {
+      title: 'Pending',
+      value: stats.pending.toString(),
+      icon: AlertCircle,
+      iconBg: 'bg-purple-600',
+      gradientFrom: 'from-purple-600/10',
+      growth: `${stats.total > 0 ? ((stats.pending / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowDown,
+      growthColor: 'text-red-600',
+      description: 'awaiting review',
+    },
+    {
+      title: 'Approved',
+      value: stats.approved.toString(),
+      icon: CheckCircle2,
+      iconBg: 'bg-[#487FFF]',
+      gradientFrom: 'from-[#487FFF]/10',
+      growth: `${stats.total > 0 ? ((stats.approved / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'validated records',
+    },
+    {
+      title: 'Rejected',
+      value: stats.rejected.toString(),
+      icon: XCircle,
+      iconBg: 'bg-green-600',
+      gradientFrom: 'from-green-600/10',
+      growth: `${stats.total > 0 ? ((stats.rejected / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowDown,
+      growthColor: 'text-red-600',
+      description: 'declined records',
+    },
+  ];
 
   const handleStatusUpdate = async (id: number, status: string) => {
     try {
@@ -164,53 +216,7 @@ export default function Attendance() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Records</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
-            </div>
-            <div className="p-3 bg-indigo-50 rounded-lg">
-              <Clock className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Pending</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.pending}</h3>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <AlertCircle className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Approved</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.approved}</h3>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Rejected</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.rejected}</h3>
-            </div>
-            <div className="p-3 bg-red-50 rounded-lg">
-              <XCircle className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">

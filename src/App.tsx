@@ -19,8 +19,6 @@ import Suppliers from './pages/suppliers/Suppliers';
 import SupplierContracts from './pages/suppliers/SupplierContracts';
 import Customers from './pages/customers/Customers';
 import CustomerDetails from './pages/customers/CustomerDetails';
-import CustomerRequests from './pages/customers/CustomerRequests';
-import AddCustomerRequest from './pages/customers/AddCustomerRequest';
 import RegisterCompany from './pages/admin/RegisterCompany';
 import Invoices from './pages/invoices/Invoices';
 import CreateInvoice from './pages/invoices/CreateInvoice';
@@ -51,9 +49,6 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/auth/login" element={<Login />} />
-          <Route path="/auth/register" element={<Register />} />
-          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="activities" element={<RecentActivities />} />
@@ -72,8 +67,6 @@ export default function App() {
             <Route path="suppliers/contracts" element={<SupplierContracts />} />
             <Route path="customers" element={<Customers />} />
             <Route path="customers/:id" element={<CustomerDetails />} />
-            <Route path="customer-requests" element={<CustomerRequests />} />
-            <Route path="add-customer-request" element={<AddCustomerRequest />} />
             <Route path="supplier-employees" element={<SupplierEmployees />} />
             <Route path="add-supplier-employee" element={<AddSupplierEmployee />} />
             <Route path="projects" element={<Projects />} />

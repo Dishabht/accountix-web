@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Search, X, Edit2, Trash2, ClipboardList, DollarSign, Users } from 'lucide-react';
+import { Plus, Search, X, Edit2, Trash2, ClipboardList, DollarSign, Users, ArrowUp, ArrowDown } from 'lucide-react';
+import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function Assignments() {
   const { token, user } = useAuth();
@@ -63,6 +64,42 @@ export default function Assignments() {
       avgPay
     };
   }, [assignments]);
+
+  const statCards: DashpanelCardData[] = [
+    {
+      title: 'Total Assignments',
+      value: stats.total.toString(),
+      icon: ClipboardList,
+      iconBg: 'bg-cyan-600',
+      gradientFrom: 'from-cyan-600/10',
+      growth: '+0%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'active mappings',
+    },
+    {
+      title: 'Avg Billing Rate',
+      value: `$${stats.avgBilling.toFixed(2)}`,
+      icon: DollarSign,
+      iconBg: 'bg-purple-600',
+      gradientFrom: 'from-purple-600/10',
+      growth: '+0%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'per assignment',
+    },
+    {
+      title: 'Avg Pay Rate',
+      value: `$${stats.avgPay.toFixed(2)}`,
+      icon: Users,
+      iconBg: 'bg-[#487FFF]',
+      gradientFrom: 'from-[#487FFF]/10',
+      growth: '+0%',
+      growthIcon: ArrowDown,
+      growthColor: 'text-red-600',
+      description: 'team payout avg',
+    },
+  ];
 
   const openAddModal = () => {
     setFormData({ id: null, employee_id: '', project_id: '', billing_rate: '', pay_rate: '' });
@@ -154,42 +191,7 @@ export default function Assignments() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Assignments</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
-            </div>
-            <div className="p-3 bg-indigo-50 rounded-lg">
-              <ClipboardList className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Avg Billing Rate</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">${stats.avgBilling.toFixed(2)}</h3>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
-              <DollarSign className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Avg Pay Rate</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">${stats.avgPay.toFixed(2)}</h3>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <Users className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">

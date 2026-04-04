@@ -1,24 +1,29 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Search, X, Briefcase, Eye, CheckCircle2, XCircle, FolderKanban } from 'lucide-react';
+import { api } from '../../services/api';
+import { Project } from '../../types';
+import { Plus, Search, X, Briefcase, Eye, CheckCircle2, XCircle, FolderKanban, ArrowUp, ArrowDown } from 'lucide-react';
+import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function Projects() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const fetchProjects = () => {
-    fetch('/api/projects', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setProjects(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+  // Fetch all projects from API
+  const fetchProjects = async () => {
+    try {
+      const data = await api.get('/projects', token);
+      setProjects(data);
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -41,6 +46,42 @@ export default function Projects() {
       inactive: projects.filter(p => p.status !== 'Active').length,
     };
   }, [projects]);
+
+  const statCards: DashpanelCardData[] = [
+    {
+      title: 'Total Projects',
+      value: stats.total.toString(),
+      icon: FolderKanban,
+      iconBg: 'bg-cyan-600',
+      gradientFrom: 'from-cyan-600/10',
+      growth: '+0%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'project portfolio',
+    },
+    {
+      title: 'Active',
+      value: stats.active.toString(),
+      icon: CheckCircle2,
+      iconBg: 'bg-purple-600',
+      gradientFrom: 'from-purple-600/10',
+      growth: `${stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'currently running',
+    },
+    {
+      title: 'Inactive',
+      value: stats.inactive.toString(),
+      icon: XCircle,
+      iconBg: 'bg-[#487FFF]',
+      gradientFrom: 'from-[#487FFF]/10',
+      growth: `${stats.total > 0 ? ((stats.inactive / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowDown,
+      growthColor: 'text-red-600',
+      description: 'paused or closed',
+    },
+  ];
 
   const openAddPage = () => {
     navigate('/projects/add');
@@ -70,42 +111,7 @@ export default function Projects() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Projects</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
-            </div>
-            <div className="p-3 bg-indigo-50 rounded-lg">
-              <FolderKanban className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Active</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.active}</h3>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Inactive</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.inactive}</h3>
-            </div>
-            <div className="p-3 bg-red-50 rounded-lg">
-              <XCircle className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">

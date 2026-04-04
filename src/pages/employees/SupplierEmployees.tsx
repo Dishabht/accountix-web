@@ -1,21 +1,22 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Search, Edit2, ClipboardList, CheckCircle2, FileText, AlertCircle } from 'lucide-react';
+import { api } from '../../services/api';
+import { Employee } from '../../types';
+import { Plus, Search, Edit2, ClipboardList, CheckCircle2, FileText, AlertCircle, ArrowUp, ArrowDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function SupplierEmployees() {
   const { token } = useAuth();
   const navigate = useNavigate();
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
   useEffect(() => {
-    fetch('/api/supplier-employees', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
+    // Fetch supplier employees from API using centralized service
+    api.get('/supplier-employees', token)
       .then(data => setEmployees(data))
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -38,6 +39,53 @@ export default function SupplierEmployees() {
     };
   }, [employees]);
 
+  const statCards: DashpanelCardData[] = [
+    {
+      title: 'Total Employees',
+      value: stats.total.toString(),
+      icon: ClipboardList,
+      iconBg: 'bg-cyan-600',
+      gradientFrom: 'from-cyan-600/10',
+      growth: '+0%',
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'supplier resources',
+    },
+    {
+      title: 'Active',
+      value: stats.active.toString(),
+      icon: CheckCircle2,
+      iconBg: 'bg-purple-600',
+      gradientFrom: 'from-purple-600/10',
+      growth: `${stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowUp,
+      growthColor: 'text-green-600',
+      description: 'ready to deploy',
+    },
+    {
+      title: 'Draft',
+      value: stats.draft.toString(),
+      icon: FileText,
+      iconBg: 'bg-[#487FFF]',
+      gradientFrom: 'from-[#487FFF]/10',
+      growth: `${stats.total > 0 ? ((stats.draft / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowDown,
+      growthColor: 'text-red-600',
+      description: 'in onboarding',
+    },
+    {
+      title: 'Other',
+      value: stats.other.toString(),
+      icon: AlertCircle,
+      iconBg: 'bg-green-600',
+      gradientFrom: 'from-green-600/10',
+      growth: `${stats.total > 0 ? ((stats.other / stats.total) * 100).toFixed(0) : 0}%`,
+      growthIcon: ArrowDown,
+      growthColor: 'text-red-600',
+      description: 'other statuses',
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -54,53 +102,7 @@ export default function SupplierEmployees() {
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Employees</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
-            </div>
-            <div className="p-3 bg-indigo-50 rounded-lg">
-              <ClipboardList className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Active</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.active}</h3>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Draft</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.draft}</h3>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <FileText className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Other</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.other}</h3>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-lg">
-              <AlertCircle className="w-6 h-6 text-slate-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
