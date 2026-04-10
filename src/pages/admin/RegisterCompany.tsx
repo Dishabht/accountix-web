@@ -3,6 +3,23 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, User, MapPin, Globe, FileText, Save, Upload, X, ArrowLeft, CheckCircle2, Activity } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+const parseServices = (services: unknown): string[] => {
+  if (Array.isArray(services)) {
+    return services.filter((service): service is string => typeof service === 'string');
+  }
+
+  if (typeof services === 'string') {
+    try {
+      const parsed = JSON.parse(services);
+      return Array.isArray(parsed) ? parsed.filter((service): service is string => typeof service === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+};
+
 export default function RegisterCompany() {
   const { id } = useParams();
   const { token } = useAuth();
@@ -58,7 +75,7 @@ export default function RegisterCompany() {
             country: data.country || '',
             logoUrl: data.logo_url || '',
             project: data.project || '',
-            services: data.services ? JSON.parse(data.services) : [],
+            services: parseServices(data.services),
             status: data.status || 'Active',
             contactPersonName: data.contact_person_name || '',
             contactPersonRole: data.contact_person_role || '',

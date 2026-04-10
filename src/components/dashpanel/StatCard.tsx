@@ -23,13 +23,17 @@ const StatCard = ({ cardsData }: StatCardProps) => {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center gap-2 text-sm">
-              <span className={`flex items-center gap-1 ${card.growthColor}`}>
-                <card.growthIcon fill="currentColor" stroke="none" width={14} height={14} />
-                {card.growth}
-              </span>
-              <span className="text-[13px] text-neutral-500">{card.description}</span>
-            </div>
+            {(card.growth && card.growthIcon && card.growthColor) || card.description ? (
+              <div className="mt-4 flex items-center gap-2 text-sm">
+                {card.growth && card.growthIcon && card.growthColor && (
+                  <span className={`flex items-center gap-1 ${card.growthColor}`}>
+                    <card.growthIcon fill="currentColor" stroke="none" width={14} height={14} />
+                    {card.growth}
+                  </span>
+                )}
+                {card.description && <span className="text-[13px] text-neutral-500">{card.description}</span>}
+              </div>
+            ) : null}
           </div>
         </div>
       ))}

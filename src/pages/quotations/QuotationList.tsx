@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Quotation } from '../../types';
+import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function QuotationList() {
   const { token } = useAuth();
@@ -43,6 +44,44 @@ export default function QuotationList() {
     };
   }, [quotations]);
 
+  const statCards: DashpanelCardData[] = [
+    {
+      title: 'Total',
+      value: stats.total.toString(),
+      icon: FileText,
+      iconBg: 'bg-cyan-600',
+      gradientFrom: 'from-cyan-600/10',
+    },
+    {
+      title: 'Draft',
+      value: stats.draft.toString(),
+      icon: Clock,
+      iconBg: 'bg-purple-600',
+      gradientFrom: 'from-purple-600/10',
+    },
+    {
+      title: 'Sent',
+      value: stats.sent.toString(),
+      icon: Send,
+      iconBg: 'bg-[#487FFF]',
+      gradientFrom: 'from-[#487FFF]/10',
+    },
+    {
+      title: 'Accepted',
+      value: stats.accepted.toString(),
+      icon: CheckCircle2,
+      iconBg: 'bg-green-600',
+      gradientFrom: 'from-green-600/10',
+    },
+    {
+      title: 'Rejected',
+      value: stats.rejected.toString(),
+      icon: XCircle,
+      iconBg: 'bg-red-600',
+      gradientFrom: 'from-red-600/10',
+    },
+  ];
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Draft': return 'bg-slate-100 text-slate-800';
@@ -66,29 +105,10 @@ export default function QuotationList() {
         </Link>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Total</p>
-          <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Draft</p>
-          <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.draft}</h3>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Sent</p>
-          <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.sent}</h3>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Accepted</p>
-          <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.accepted}</h3>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Rejected</p>
-          <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.rejected}</h3>
-        </div>
-      </div>
+      <MetricsWidgets
+        cardsData={statCards}
+        gridClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
+      />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
@@ -136,7 +156,13 @@ export default function QuotationList() {
                   <td colSpan={5} className="px-6 py-4 text-center text-sm text-slate-500">No quotations found.</td>
                 </tr>
               ) : (
-                filteredQuotations.map((quote) => (
+                filteredQuotations.map((quote) => {
+                  const rate = quote.rate ?? 0;
+                  const duration = quote.duration ?? 0;
+                  const rateType = quote.rate_type ?? 'hourly';
+                  const totalAmount = quote.total_amount ?? quote.amount ?? rate * duration;
+
+                  return (
                   <tr key={quote.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
@@ -153,17 +179,17 @@ export default function QuotationList() {
                     <td className="px-6 py-4">
                       <div className="flex flex-col space-y-1">
                         <span className="text-sm text-slate-900">
-                          ${quote.rate.toFixed(2)} / {quote.rate_type === 'hourly' ? 'hr' : 'day'}
+                          ${rate.toFixed(2)} / {rateType === 'hourly' ? 'hr' : 'day'}
                         </span>
                         <span className="text-sm text-slate-500">
-                          {quote.duration} {quote.rate_type === 'hourly' ? 'hours' : 'days'}
+                          {duration} {rateType === 'hourly' ? 'hours' : 'days'}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-medium text-slate-900 flex items-center">
                         <DollarSign className="w-4 h-4 text-slate-400" />
-                        {quote.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -177,7 +203,7 @@ export default function QuotationList() {
                       </Link>
                     </td>
                   </tr>
-                ))
+                );})
               )}
             </tbody>
           </table>

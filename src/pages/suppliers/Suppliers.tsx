@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Supplier, Project } from '../../types';
-import { Plus, Search, X, Edit2, Trash2, Building2, UserCheck, UserX, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Search, X, Edit2, Trash2, Building2, UserCheck, UserX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
@@ -76,10 +76,6 @@ export default function Suppliers() {
       icon: Building2,
       iconBg: 'bg-cyan-600',
       gradientFrom: 'from-cyan-600/10',
-      growth: '+0%',
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'registered suppliers',
     },
     {
       title: 'With Projects',
@@ -87,10 +83,6 @@ export default function Suppliers() {
       icon: UserCheck,
       iconBg: 'bg-purple-600',
       gradientFrom: 'from-purple-600/10',
-      growth: `${stats.total > 0 ? ((stats.withProject / stats.total) * 100).toFixed(0) : 0}%`,
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'project linked',
     },
     {
       title: 'Without Projects',
@@ -98,10 +90,6 @@ export default function Suppliers() {
       icon: UserX,
       iconBg: 'bg-[#487FFF]',
       gradientFrom: 'from-[#487FFF]/10',
-      growth: `${stats.total > 0 ? ((stats.withoutProject / stats.total) * 100).toFixed(0) : 0}%`,
-      growthIcon: ArrowDown,
-      growthColor: 'text-red-600',
-      description: 'awaiting assignment',
     },
   ];
 

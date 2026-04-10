@@ -6,8 +6,8 @@ export interface DashpanelCardData {
   icon: LucideIcon;
   iconBg: string;
   gradientFrom: string;
-  growth: string;
-  growthIcon: LucideIcon;
-  growthColor: string;
-  description: string;
+  growth?: string;
+  growthIcon?: LucideIcon;
+  growthColor?: string;
+  description?: string;
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FileText, Search, Plus, Building2, User, Clock, DollarSign, FolderKanban, CheckCircle2, AlertCircle, X, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { FileText, Search, Plus, Building2, User, Clock, DollarSign, FolderKanban, CheckCircle2, AlertCircle, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { SupplierContract, Supplier, Employee, Project } from '../../types';
@@ -75,10 +75,6 @@ export default function SupplierContracts() {
       icon: FileText,
       iconBg: 'bg-cyan-600',
       gradientFrom: 'from-cyan-600/10',
-      growth: '+0%',
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'supplier contracts',
     },
     {
       title: 'Active',
@@ -86,10 +82,6 @@ export default function SupplierContracts() {
       icon: CheckCircle2,
       iconBg: 'bg-purple-600',
       gradientFrom: 'from-purple-600/10',
-      growth: `${stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(0) : 0}%`,
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'running contracts',
     },
     {
       title: 'Pending',
@@ -97,10 +89,6 @@ export default function SupplierContracts() {
       icon: AlertCircle,
       iconBg: 'bg-[#487FFF]',
       gradientFrom: 'from-[#487FFF]/10',
-      growth: `${stats.total > 0 ? ((stats.pending / stats.total) * 100).toFixed(0) : 0}%`,
-      growthIcon: ArrowDown,
-      growthColor: 'text-red-600',
-      description: 'awaiting approval',
     },
   ];
 

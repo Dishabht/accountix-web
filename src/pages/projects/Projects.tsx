@@ -33,7 +33,7 @@ export default function Projects() {
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            p.customer_name.toLowerCase().includes(searchTerm.toLowerCase());
+                            (p.customer_name ?? '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -87,7 +87,7 @@ export default function Projects() {
     navigate('/projects/add');
   };
 
-  const openViewPage = (id: number) => {
+  const openViewPage = (id: string) => {
     navigate(`/projects/${id}`);
   };
 

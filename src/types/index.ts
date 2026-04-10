@@ -29,6 +29,16 @@ export interface Employee {
   manager_name?: string;
 }
 
+export interface SupplierEmployee {
+  id: string;
+  supplier_id?: string;
+  skills?: string;
+  availability?: string;
+  rate?: number;
+  rate_type?: 'hourly' | 'daily';
+  status?: 'Active' | 'Draft' | 'Inactive' | 'Assigned / Completed';
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -56,7 +66,12 @@ export interface Quotation {
   customer_name?: string;
   project_id?: string;
   project_name?: string;
-  amount: number;
+  rate_type?: 'hourly' | 'daily';
+  rate?: number;
+  duration?: number;
+  total_amount?: number;
+  amount?: number;
+  created_at?: string;
   status: 'Draft' | 'Sent' | 'Accepted' | 'Rejected';
 }
 

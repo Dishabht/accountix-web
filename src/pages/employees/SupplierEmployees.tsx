@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { Employee } from '../../types';
-import { Plus, Search, Edit2, ClipboardList, CheckCircle2, FileText, AlertCircle, ArrowUp, ArrowDown } from 'lucide-react';
+import { SupplierEmployee } from '../../types';
+import { Plus, Search, Edit2, ClipboardList, CheckCircle2, FileText, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function SupplierEmployees() {
   const { token } = useAuth();
   const navigate = useNavigate();
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<SupplierEmployee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -46,10 +46,6 @@ export default function SupplierEmployees() {
       icon: ClipboardList,
       iconBg: 'bg-cyan-600',
       gradientFrom: 'from-cyan-600/10',
-      growth: '+0%',
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'supplier resources',
     },
     {
       title: 'Active',
@@ -57,10 +53,6 @@ export default function SupplierEmployees() {
       icon: CheckCircle2,
       iconBg: 'bg-purple-600',
       gradientFrom: 'from-purple-600/10',
-      growth: `${stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(0) : 0}%`,
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'ready to deploy',
     },
     {
       title: 'Draft',
@@ -68,10 +60,6 @@ export default function SupplierEmployees() {
       icon: FileText,
       iconBg: 'bg-[#487FFF]',
       gradientFrom: 'from-[#487FFF]/10',
-      growth: `${stats.total > 0 ? ((stats.draft / stats.total) * 100).toFixed(0) : 0}%`,
-      growthIcon: ArrowDown,
-      growthColor: 'text-red-600',
-      description: 'in onboarding',
     },
     {
       title: 'Other',
@@ -79,10 +67,6 @@ export default function SupplierEmployees() {
       icon: AlertCircle,
       iconBg: 'bg-green-600',
       gradientFrom: 'from-green-600/10',
-      growth: `${stats.total > 0 ? ((stats.other / stats.total) * 100).toFixed(0) : 0}%`,
-      growthIcon: ArrowDown,
-      growthColor: 'text-red-600',
-      description: 'other statuses',
     },
   ];
 

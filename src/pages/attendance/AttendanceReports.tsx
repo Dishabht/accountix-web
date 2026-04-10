@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Download, Filter, CheckCircle2, XCircle, Clock, FileText, ArrowUp, ArrowDown } from 'lucide-react';
+import { Download, Filter, CheckCircle2, XCircle, Clock, FileText } from 'lucide-react';
 import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function AttendanceReports() {
@@ -33,10 +33,6 @@ export default function AttendanceReports() {
       icon: CheckCircle2,
       iconBg: 'bg-cyan-600',
       gradientFrom: 'from-cyan-600/10',
-      growth: '+12%',
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'from last month',
     },
     {
       title: 'Total Absent Days',
@@ -44,10 +40,6 @@ export default function AttendanceReports() {
       icon: XCircle,
       iconBg: 'bg-purple-600',
       gradientFrom: 'from-purple-600/10',
-      growth: '+2%',
-      growthIcon: ArrowUp,
-      growthColor: 'text-red-600',
-      description: 'from last month',
     },
     {
       title: 'Total Half Days',
@@ -55,10 +47,6 @@ export default function AttendanceReports() {
       icon: Clock,
       iconBg: 'bg-[#487FFF]',
       gradientFrom: 'from-[#487FFF]/10',
-      growth: '-5%',
-      growthIcon: ArrowDown,
-      growthColor: 'text-green-600',
-      description: 'from last month',
     },
     {
       title: 'Total Leaves',
@@ -66,10 +54,6 @@ export default function AttendanceReports() {
       icon: FileText,
       iconBg: 'bg-green-600',
       gradientFrom: 'from-green-600/10',
-      growth: '0%',
-      growthIcon: ArrowUp,
-      growthColor: 'text-slate-500',
-      description: 'same as last month',
     },
   ];
 

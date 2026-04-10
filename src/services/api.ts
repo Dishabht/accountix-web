@@ -8,33 +8,43 @@ const headers = (token: string | null) => ({
   ...(token ? { Authorization: `Bearer ${token}` } : {}),
 });
 
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+const buildErrorMessage = (data: any, fallback: string) => {
+  if (data?.error) return data.error;
+  if (data?.message) return data.message;
+  return fallback;
+};
+
+const request = async (url: string, token: string | null, method: HttpMethod, body?: any) => {
+  const response = await fetch(`${BASE}${url}`, {
+    method,
+    headers: headers(token),
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+
+  const contentType = response.headers.get('content-type') || '';
+  const isJson = contentType.includes('application/json');
+  const data = isJson ? await response.json() : null;
+
+  if (!response.ok) {
+    throw new Error(buildErrorMessage(data, 'Request failed'));
+  }
+
+  return data;
+};
+
 // Centralized API client with GET, POST, PUT, DELETE methods
 export const api = {
   // GET request — retrieve data from server
-  get: (url: string, token: string | null) =>
-    fetch(`${BASE}${url}`, { headers: headers(token) })
-      .then(r => r.json()),
+  get: (url: string, token: string | null) => request(url, token, 'GET'),
 
   // POST request — create new resource on server
-  post: (url: string, token: string | null, body: any) =>
-    fetch(`${BASE}${url}`, {
-      method: 'POST',
-      headers: headers(token),
-      body: JSON.stringify(body),
-    }).then(r => r.json()),
+  post: (url: string, token: string | null, body: any) => request(url, token, 'POST', body),
 
   // PUT request — update existing resource on server
-  put: (url: string, token: string | null, body: any) =>
-    fetch(`${BASE}${url}`, {
-      method: 'PUT',
-      headers: headers(token),
-      body: JSON.stringify(body),
-    }).then(r => r.json()),
+  put: (url: string, token: string | null, body: any) => request(url, token, 'PUT', body),
 
   // DELETE request — remove resource from server
-  delete: (url: string, token: string | null) =>
-    fetch(`${BASE}${url}`, {
-      method: 'DELETE',
-      headers: headers(token),
-    }).then(r => r.json()),
+  delete: (url: string, token: string | null) => request(url, token, 'DELETE'),
 };

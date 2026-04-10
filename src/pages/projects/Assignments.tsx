@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Search, X, Edit2, Trash2, ClipboardList, DollarSign, Users, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Search, X, Edit2, Trash2, ClipboardList, DollarSign, Users } from 'lucide-react';
 import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function Assignments() {
@@ -72,10 +72,6 @@ export default function Assignments() {
       icon: ClipboardList,
       iconBg: 'bg-cyan-600',
       gradientFrom: 'from-cyan-600/10',
-      growth: '+0%',
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'active mappings',
     },
     {
       title: 'Avg Billing Rate',
@@ -83,10 +79,6 @@ export default function Assignments() {
       icon: DollarSign,
       iconBg: 'bg-purple-600',
       gradientFrom: 'from-purple-600/10',
-      growth: '+0%',
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'per assignment',
     },
     {
       title: 'Avg Pay Rate',
@@ -94,10 +86,6 @@ export default function Assignments() {
       icon: Users,
       iconBg: 'bg-[#487FFF]',
       gradientFrom: 'from-[#487FFF]/10',
-      growth: '+0%',
-      growthIcon: ArrowDown,
-      growthColor: 'text-red-600',
-      description: 'team payout avg',
     },
   ];
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Invoice } from '../../types';
-import { Plus, Search, Eye, FileText, CheckCircle2, Send, Clock, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Search, Eye, FileText, CheckCircle2, Send, Clock } from 'lucide-react';
 import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
 
 export default function Invoices() {
@@ -58,10 +58,6 @@ export default function Invoices() {
       icon: FileText,
       iconBg: 'bg-cyan-600',
       gradientFrom: 'from-cyan-600/10',
-      growth: '+0%',
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'all invoices',
     },
     {
       title: 'Paid',
@@ -69,10 +65,6 @@ export default function Invoices() {
       icon: CheckCircle2,
       iconBg: 'bg-purple-600',
       gradientFrom: 'from-purple-600/10',
-      growth: `${stats.total > 0 ? ((stats.paid / stats.total) * 100).toFixed(0) : 0}%`,
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'payment completed',
     },
     {
       title: 'Sent',
@@ -80,10 +72,6 @@ export default function Invoices() {
       icon: Send,
       iconBg: 'bg-[#487FFF]',
       gradientFrom: 'from-[#487FFF]/10',
-      growth: `${stats.total > 0 ? ((stats.sent / stats.total) * 100).toFixed(0) : 0}%`,
-      growthIcon: ArrowUp,
-      growthColor: 'text-green-600',
-      description: 'awaiting payment',
     },
     {
       title: 'Draft',
@@ -91,10 +79,6 @@ export default function Invoices() {
       icon: Clock,
       iconBg: 'bg-green-600',
       gradientFrom: 'from-green-600/10',
-      growth: `${stats.total > 0 ? ((stats.draft / stats.total) * 100).toFixed(0) : 0}%`,
-      growthIcon: ArrowDown,
-      growthColor: 'text-red-600',
-      description: 'not sent yet',
     },
   ];
 
