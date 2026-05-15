@@ -5,8 +5,9 @@ import { api } from '../../services/api';
 import { Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 
 export default function Login() {
-  const [email, setEmail] = useState('admin@portal.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [allowAutofill, setAllowAutofill] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +51,7 @@ export default function Login() {
             <p className="mt-2 text-slate-500 text-base">Welcome back! please enter your detail</p>
           </div>
 
-          <form className="mt-8" onSubmit={handleSubmit}>
+          <form className="mt-8" onSubmit={handleSubmit} autoComplete="on">
             {error && (
               <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                 {error}
@@ -64,11 +65,14 @@ export default function Login() {
                   <input
                     type="email"
                     required
+                    name="login-email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setAllowAutofill(true)}
+                    readOnly={!allowAutofill}
                     className="w-full pl-13 pr-4 h-14 rounded-xl bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-0 outline-none"
                     placeholder="Email"
-                    autoComplete="off"
+                    autoComplete="username"
                   />
                 </div>
               </div>
@@ -79,11 +83,14 @@ export default function Login() {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
+                    name="login-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setAllowAutofill(true)}
+                    readOnly={!allowAutofill}
                     className="w-full pl-13 pr-12 h-14 rounded-xl bg-slate-100 border border-slate-300 focus:border-indigo-500 focus:ring-0 outline-none"
                     placeholder="Password"
-                    autoComplete="off"
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
