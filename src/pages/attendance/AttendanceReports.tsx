@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { ApexOptions } from 'apexcharts';
 import Chart from 'react-apexcharts';
-import { Download, Filter, CheckCircle2, XCircle, Clock, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, CheckCircle2, XCircle, Clock, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
@@ -15,6 +15,118 @@ export default function AttendanceReports() {
   const [employees, setEmployees] = useState<AttendanceEmployee[]>([]);
   const [projects, setProjects] = useState<AttendanceProject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const loadScript = (src: string) =>
+    new Promise<void>((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) return resolve();
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = (e) => reject(e);
+      document.body.appendChild(s);
+    });
+
+  const exportPdf = async () => {
+    if (!groupedData.length) {
+      alert('No saved attendance data to export.');
+      return;
+    }
+
+    try {
+      await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+      const jspdfGlobal = (window as any).jspdf || (window as any).jsPDF || (window as any).jspdf?.default || (window as any).jspdf;
+      const jsPDF = jspdfGlobal?.jsPDF || jspdfGlobal;
+      if (!jsPDF) throw new Error('jsPDF failed to load');
+
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const left = 12;
+      const right = 12;
+      const contentWidth = pageWidth - left - right;
+      const rowHeight = 8;
+      const headerHeight = 10;
+      const maxRowsPerPage = Math.floor((pageHeight - 55) / rowHeight);
+
+      const reportLabel = reportType === 'employee' ? 'Per Employee' : 'Per Project';
+      const title = 'Attendance Details';
+      const subtitle = `${currentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' })} - ${reportLabel}`;
+
+      const rows = groupedData.map((row) => [row.name, String(row.present), String(row.absent), String(row.halfDay), String(row.leave)]);
+
+      const drawHeader = () => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(16);
+        pdf.text(title, left, 16);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10);
+        pdf.text(subtitle, left, 22);
+
+        const tableTop = 38;
+        const cols = [contentWidth * 0.46, contentWidth * 0.14, contentWidth * 0.14, contentWidth * 0.13, contentWidth * 0.13];
+        const xPositions = [left, left + cols[0], left + cols[0] + cols[1], left + cols[0] + cols[1] + cols[2], left + cols[0] + cols[1] + cols[2] + cols[3]];
+
+        pdf.setDrawColor(226, 232, 240);
+        pdf.line(left, 32, left + contentWidth, 32);
+        pdf.setFillColor(248, 250, 252);
+        pdf.rect(left, tableTop - 7, contentWidth, headerHeight, 'F');
+        pdf.setDrawColor(203, 213, 225);
+        pdf.rect(left, tableTop - 7, contentWidth, headerHeight);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(71, 85, 105);
+        pdf.text('Name', xPositions[0] + 2, tableTop);
+        pdf.text('Present', xPositions[1] + cols[1] / 2, tableTop, { align: 'center' });
+        pdf.text('Absent', xPositions[2] + cols[2] / 2, tableTop, { align: 'center' });
+        pdf.text('Half Day', xPositions[3] + cols[3] / 2, tableTop, { align: 'center' });
+        pdf.text('Leave', xPositions[4] + cols[4] / 2, tableTop, { align: 'center' });
+
+        return { tableTop, cols, xPositions };
+      };
+
+      let { tableTop, cols, xPositions } = drawHeader();
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      let rowIndexOnPage = 0;
+
+      rows.forEach((row, index) => {
+        if (rowIndexOnPage >= maxRowsPerPage) {
+          pdf.addPage();
+          ({ tableTop, cols, xPositions } = drawHeader());
+          rowIndexOnPage = 0;
+        }
+
+        const y = tableTop + 6 + rowIndexOnPage * rowHeight;
+        const fill = index % 2 === 0 ? [255, 255, 255] : [248, 250, 252];
+        pdf.setFillColor(fill[0], fill[1], fill[2]);
+        pdf.rect(left, y - 5, contentWidth, rowHeight, 'F');
+        pdf.setDrawColor(226, 232, 240);
+        pdf.rect(left, y - 5, contentWidth, rowHeight);
+
+        const cellTexts = [row[0], row[1], row[2], row[3], row[4]];
+        cellTexts.forEach((text, cellIndex) => {
+          const x = cellIndex === 0 ? xPositions[cellIndex] + 2 : xPositions[cellIndex] + cols[cellIndex] / 2;
+          const maxWidth = cols[cellIndex] - 4;
+          if (cellIndex === 0) {
+            pdf.text(pdf.splitTextToSize(text, maxWidth), x, y);
+          } else {
+            pdf.text(text, x, y, { align: 'center' });
+          }
+        });
+
+        rowIndexOnPage += 1;
+      });
+
+      const fileName = `attendance-${monthKey}-${reportType}.pdf`;
+      pdf.save(fileName);
+    } catch (err: any) {
+      console.error('Export PDF failed', err);
+      const msg = err?.message || String(err);
+      alert(`Export failed: ${msg}. Try again or use the Print dialog.`);
+    }
+  };
 
   const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
 
@@ -191,12 +303,24 @@ export default function AttendanceReports() {
           <button onClick={prevMonth} className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50">
             <ChevronLeft className="w-5 h-5 text-slate-600" />
           </button>
-          <input
-            type="month"
-            value={monthKey}
-            onChange={(e) => setCurrentMonth(new Date(`${e.target.value}-01`))}
-            className="px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-700"
-          />
+          <div className="flex items-center">
+            <input
+              id="monthPicker"
+              ref={(el) => { inputRef.current = el; }}
+              type="month"
+              value={monthKey}
+              onChange={(e) => setCurrentMonth(new Date(`${e.target.value}-01`))}
+              className="sr-only"
+              aria-label="Select month"
+            />
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click?.()}
+              className="px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-700"
+            >
+              {currentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+            </button>
+          </div>
           <button onClick={nextMonth} className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50">
             <ChevronRight className="w-5 h-5 text-slate-600" />
           </button>
@@ -218,11 +342,7 @@ export default function AttendanceReports() {
               By Project
             </button>
           </div>
-          <button className="flex items-center px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </button>
-          <button className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          <button onClick={exportPdf} className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
             <Download className="w-4 h-4 mr-2" />
             Export
           </button>
@@ -238,42 +358,8 @@ export default function AttendanceReports() {
         <Chart key={chartKey} options={chartOptions} series={chartSeries} type="bar" height={400} />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-slate-900">Saved Attendance Details</h3>
-          {isLoading && <span className="text-sm text-slate-500">Loading...</span>}
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500 border-b">
-                <th className="py-2 pr-4">Name</th>
-                <th className="py-2 pr-4">Present</th>
-                <th className="py-2 pr-4">Absent</th>
-                <th className="py-2 pr-4">Half Day</th>
-                <th className="py-2 pr-4">Leave</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groupedData.map((row) => (
-                <tr key={row.name} className="border-b last:border-0">
-                  <td className="py-3 pr-4 font-medium text-slate-900">{row.name}</td>
-                  <td className="py-3 pr-4">{row.present}</td>
-                  <td className="py-3 pr-4">{row.absent}</td>
-                  <td className="py-3 pr-4">{row.halfDay}</td>
-                  <td className="py-3 pr-4">{row.leave}</td>
-                </tr>
-              ))}
-              {!groupedData.length && (
-                <tr>
-                  <td className="py-4 text-slate-500" colSpan={5}>
-                    No saved attendance found for this month.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">
+        The detailed table is now included in the PDF export.
       </div>
     </div>
   );
