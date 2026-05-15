@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { User, FolderKanban, Clock, Calendar, Save } from 'lucide-react';
+import { api } from '../../services/api';
 
 export default function AttendanceEntry() {
+  const { token } = useAuth();
+  const [employees, setEmployees] = useState<Array<{ _id: string; name?: string; title?: string }>>([]);
+  const [projects, setProjects] = useState<Array<{ _id: string; name?: string }>>([]);
+  const [loadingLists, setLoadingLists] = useState(false);
   const [formData, setFormData] = useState({
     employeeId: '',
     projectId: '',
@@ -11,9 +17,51 @@ export default function AttendanceEntry() {
     notes: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const loadLists = async () => {
+      if (!token) return;
+      setLoadingLists(true);
+      try {
+        const [employeesData, projectsData] = await Promise.all([
+          api.get('/employees', token),
+          api.get('/projects', token),
+        ]);
+
+        setEmployees(Array.isArray(employeesData) ? employeesData : []);
+        setProjects(Array.isArray(projectsData) ? projectsData : []);
+      } catch (error) {
+        console.error('Failed to load employees/projects', error);
+      } finally {
+        setLoadingLists(false);
+      }
+    };
+
+    loadLists();
+  }, [token]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Attendance submitted:', formData);
+    try {
+      if (!formData.employeeId) return alert('Please select an employee');
+      if (!formData.projectId) return alert('Please select a project');
+
+      if (!token) return alert('Vous devez être connecté pour enregistrer une présence.');
+
+      await api.post('/attendance', token, {
+        employee_id: formData.employeeId,
+        project_id: formData.projectId,
+        date: formData.date,
+        hours: formData.workHours,
+        status: formData.status,
+        notes: formData.notes,
+      });
+
+      window.dispatchEvent(new Event('attendance:updated'));
+      alert('Attendance saved');
+    } catch (error) {
+      console.error('Failed to save attendance', error);
+      alert(error instanceof Error ? error.message : 'Failed to save attendance');
+    }
   };
 
   return (
@@ -37,11 +85,14 @@ export default function AttendanceEntry() {
                   className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   value={formData.employeeId}
                   onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                  disabled={loadingLists || !employees.length}
                 >
-                  <option value="">Select an employee</option>
-                  <option value="1">Jane Smith</option>
-                  <option value="2">Michael Johnson</option>
-                  <option value="3">Sarah Williams</option>
+                  <option value="">{loadingLists ? 'Loading employees...' : 'Select an employee'}</option>
+                  {employees.map((employee) => (
+                    <option key={employee._id} value={employee._id}>
+                      {employee.name || employee.title || employee._id}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -57,11 +108,14 @@ export default function AttendanceEntry() {
                   className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   value={formData.projectId}
                   onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                  disabled={loadingLists || !projects.length}
                 >
-                  <option value="">Select a project</option>
-                  <option value="1">Website Redesign</option>
-                  <option value="2">Mobile App Development</option>
-                  <option value="3">Cloud Migration</option>
+                  <option value="">{loadingLists ? 'Loading projects...' : 'Select a project'}</option>
+                  {projects.map((project) => (
+                    <option key={project._id} value={project._id}>
+                      {project.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
