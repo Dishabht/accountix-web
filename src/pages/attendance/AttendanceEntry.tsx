@@ -56,6 +56,11 @@ export default function AttendanceEntry() {
         notes: formData.notes,
       });
 
+      try {
+        localStorage.setItem('attendance:updated', String(Date.now()));
+      } catch (storageError) {
+        console.debug('Failed to write attendance:updated to localStorage', storageError);
+      }
       window.dispatchEvent(new Event('attendance:updated'));
       alert('Attendance saved');
     } catch (error) {

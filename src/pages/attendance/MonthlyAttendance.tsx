@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { normalizeCalendarStatus } from './attendanceUtils';
 
 type AttendanceRow = {
   id: string;
@@ -20,6 +21,8 @@ type EmployeeItem = {
 };
 
 type AttendanceItem = {
+  _id?: string;
+  id?: string;
   employee_id: string;
   project_id?: string;
   employee_name?: string;
@@ -28,24 +31,11 @@ type AttendanceItem = {
   status: string;
 };
 
-const normalizeStatus = (status: string) => {
-  const map: Record<string, string> = {
-    present: 'P',
-    P: 'P',
-    absent: 'A',
-    A: 'A',
-    half_day: 'H',
-    H: 'H',
-    leave: 'L',
-    L: 'L',
-  };
-  return map[status] ?? status ?? 'P';
-};
-
 export default function MonthlyAttendance() {
   const { token } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [attendanceData, setAttendanceData] = useState<AttendanceRow[]>([]);
+  const [attendanceRaw, setAttendanceRaw] = useState<AttendanceItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
@@ -68,6 +58,11 @@ export default function MonthlyAttendance() {
     const rowMap = new Map<string, AttendanceRow>();
     const month = currentMonth.getMonth();
     const year = currentMonth.getFullYear();
+    const today = new Date();
+    const lastDayToConsider =
+      year === today.getFullYear() && month === today.getMonth()
+        ? today.getDate()
+        : new Date(year, month + 1, 0).getDate();
     const employeeMap = new Map(
       employees.map((employee) => [String(employee._id), employee])
     );
@@ -76,6 +71,9 @@ export default function MonthlyAttendance() {
       const date = new Date(item.date);
       if (Number.isNaN(date.getTime())) return;
       if (date.getFullYear() !== year || date.getMonth() !== month) return;
+      // NOTE: we intentionally include future records so saved future attendance
+      // remains visible in the calendar. Counting/aggregation logic elsewhere
+      // should use `lastDayToConsider` when computing summaries.
 
       const employeeId = String(item.employee_id || '');
       const projectId = String(item.project_id || '');
@@ -98,7 +96,7 @@ export default function MonthlyAttendance() {
             project: projectName,
             records: {
               ...existingRow.records,
-              [day]: normalizeStatus(item.status),
+              [day]: normalizeCalendarStatus(item.status),
             },
           }
         : {
@@ -108,7 +106,7 @@ export default function MonthlyAttendance() {
             employee: employeeName,
             role: employeeRole,
             project: projectName,
-            records: { [day]: normalizeStatus(item.status) },
+            records: { [day]: normalizeCalendarStatus(item.status) },
           };
 
       rowMap.set(rowId, nextRow);
@@ -144,11 +142,12 @@ export default function MonthlyAttendance() {
         api.get('/attendance', token),
       ]);
 
-      const rows = buildRowsForMonth(
-        Array.isArray(employeesData) ? employeesData : [],
-        Array.isArray(attendanceDataResponse) ? attendanceDataResponse : []
-      );
+      const employeesList = Array.isArray(employeesData) ? employeesData : [];
+      const attendanceList = Array.isArray(attendanceDataResponse) ? attendanceDataResponse : [];
 
+      const rows = buildRowsForMonth(employeesList, attendanceList);
+
+      setAttendanceRaw(attendanceList);
       setAttendanceData(rows);
     } catch (error) {
       console.error('Failed to load monthly attendance data', error);
@@ -166,19 +165,33 @@ export default function MonthlyAttendance() {
       loadMonthlyAttendance();
     };
 
+    const handleStorageRefresh = (event: StorageEvent) => {
+      if (event.key === 'attendance:updated') {
+        loadMonthlyAttendance();
+      }
+    };
+
     window.addEventListener('attendance:updated', handleRefresh);
-    return () => window.removeEventListener('attendance:updated', handleRefresh);
+    window.addEventListener('storage', handleStorageRefresh);
+    return () => {
+      window.removeEventListener('attendance:updated', handleRefresh);
+      window.removeEventListener('storage', handleStorageRefresh);
+    };
   }, [token, currentMonth.getFullYear(), currentMonth.getMonth()]);
 
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editorSelection, setEditorSelection] = useState<{ rowId: string; day: number | null } | null>(null);
   const [editorStatus, setEditorStatus] = useState<string>('P');
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);
 
   const openEditor = (rowId: string, day: number | null) => {
     if (!day) return;
     const row = attendanceData.find((item) => item.id === rowId);
     setEditorSelection({ rowId, day });
-    setEditorStatus((row && row.records[day]) ?? 'P');
+    // if the stored status is cleared marker 'C', open editor with empty selection
+    const stored = row && row.records[day];
+    setEditorStatus(stored === 'C' ? '' : (stored ?? 'P'));
     setIsEditorOpen(true);
   };
 
@@ -189,18 +202,77 @@ export default function MonthlyAttendance() {
 
   const saveEditor = () => {
     if (!editorSelection) return;
+    (async () => {
+      const selection = editorSelection;
+      const row = attendanceData.find((r) => r.id === selection.rowId);
+      if (!row) return closeEditor();
 
-    setAttendanceData((prev) =>
-      prev.map((row) => {
-        if (row.id !== editorSelection.rowId) return row;
-        const records = { ...row.records };
-        if (editorStatus) records[editorSelection.day!] = editorStatus;
-        else delete records[editorSelection.day!];
-        return { ...row, records };
-      })
-    );
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth() + 1; // 1-based
+      const day = selection.day!;
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const isoDate = `${year}-${pad(month)}-${pad(day)}`;
 
-    closeEditor();
+      const statusMap: Record<string, string> = { P: 'present', A: 'absent', H: 'half_day', L: 'leave', '': 'cleared' };
+      const toStatus = statusMap[editorStatus] ?? 'present';
+
+      try {
+        // find existing attendance record for this employee/project/date
+        const existing = attendanceRaw.find((a) => {
+          const d = new Date(a.date);
+          if (Number.isNaN(d.getTime())) return false;
+          return (
+            String(a.employee_id) === String(row.employeeId) &&
+            d.getFullYear() === year &&
+            d.getMonth() === currentMonth.getMonth() &&
+            d.getDate() === day &&
+            String(a.project_id || '') === String(row.projectId || '')
+          );
+        });
+
+        if (existing) {
+          // update status (including 'cleared')
+          console.debug('Updating attendance', { id: existing.id || existing._id, toStatus });
+          const res = await api.put(`/attendance/${existing.id || existing._id}`, token, { status: toStatus });
+          console.debug('Update response', res);
+        } else {
+          // create new attendance (can be 'cleared')
+          console.debug('Creating attendance', { employee: row.employeeId, project: row.projectId, date: isoDate, toStatus });
+          const res = await api.post('/attendance', token, {
+            employee_id: row.employeeId,
+            project_id: row.projectId || undefined,
+            date: isoDate,
+            hours: 8,
+            status: toStatus,
+            notes: '',
+          });
+          console.debug('Create response', res);
+        }
+
+        // reload authoritative data
+        await loadMonthlyAttendance();
+
+        // notify other listeners
+        try {
+          localStorage.setItem('attendance:updated', String(Date.now()));
+          window.dispatchEvent(new Event('attendance:updated'));
+        } catch (e) {
+          console.debug('Failed to dispatch attendance:updated', e);
+        }
+
+        // show confirmation UI
+        setSaveMessage('Attendance saved');
+        setSaveSuccess(true);
+        setTimeout(() => setSaveMessage(null), 3000);
+      } catch (error) {
+        console.error('Failed to save attendance from calendar', error);
+        setSaveMessage('Failed to save attendance');
+        setSaveSuccess(false);
+        setTimeout(() => setSaveMessage(null), 5000);
+      } finally {
+        closeEditor();
+      }
+    })();
   };
 
   const nextMonth = () => {
@@ -284,20 +356,29 @@ export default function MonthlyAttendance() {
                     </div>
                   </td>
                   {calendarDaysWithInitials.map((item, index) => {
-                    const rawStatus = row.records[item.day];
+                    const rawStatus = row.records[item.day]; // could be 'P','A','H','L','C' or undefined
                     const today = new Date();
                     const isCurrentMonth = currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth();
-                    const shouldAutoPresent = !rawStatus && !item.isWeekend && isCurrentMonth && item.day <= today.getDate();
-                    const status = rawStatus ?? (shouldAutoPresent ? 'P' : null);
+                    // do not auto-present if status explicitly cleared ('C')
+                    const isCleared = rawStatus === 'C';
+                    const shouldAutoPresent = rawStatus == null && !item.isWeekend && isCurrentMonth && item.day <= today.getDate();
+                    const displayStatus = isCleared ? null : (rawStatus ?? (shouldAutoPresent ? 'P' : null));
 
                     return (
                       <td key={index} className={`px-1 py-3 text-center ${item.isWeekend ? 'bg-slate-100/40' : ''}`}>
-                        {status ? (
+                        {isCleared ? (
                           <button
                             onClick={() => openEditor(row.id, item.day)}
-                            className={`w-8 h-8 rounded flex items-center justify-center text-xs font-medium mx-auto ${getStatusColor(status)}`}
+                            className="w-8 h-8 rounded flex items-center justify-center text-xs font-medium mx-auto bg-slate-50 text-slate-300 hover:bg-slate-100"
                           >
-                            {status}
+                            -
+                          </button>
+                        ) : displayStatus ? (
+                          <button
+                            onClick={() => openEditor(row.id, item.day)}
+                            className={`w-8 h-8 rounded flex items-center justify-center text-xs font-medium mx-auto ${getStatusColor(displayStatus)}`}
+                          >
+                            {displayStatus}
                           </button>
                         ) : (
                           <button
@@ -380,6 +461,14 @@ export default function MonthlyAttendance() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {saveMessage && (
+          <div className={`fixed top-4 right-4 z-50 max-w-sm px-4 py-3 rounded-lg shadow-lg text-sm ${
+            saveSuccess ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+          }`}>
+            {saveMessage}
           </div>
         )}
 
