@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -27,6 +27,7 @@ export default function Layout() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const bodyOverflowRef = useRef('');
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -121,6 +122,23 @@ export default function Layout() {
     }
   }, [location.pathname, navigationGroups, expandedGroups]);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      bodyOverflowRef.current = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = bodyOverflowRef.current;
+    }
+
+    return () => {
+      document.body.style.overflow = bodyOverflowRef.current;
+    };
+  }, [isMobileMenuOpen]);
+
   const toggleGroup = (groupName: string) => {
     setExpandedGroups(prev => ({
       ...prev,
@@ -136,7 +154,7 @@ export default function Layout() {
   return (
     <div className="h-screen bg-slate-50 flex overflow-hidden">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:relative lg:flex lg:flex-col lg:shrink-0`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-[85vw] max-w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:relative lg:flex lg:flex-col lg:shrink-0`}>
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-end h-16 px-4 bg-slate-950 shrink-0">
             <button className="lg:hidden" onClick={() => setIsMobileMenuOpen(false)}>
@@ -208,8 +226,17 @@ export default function Layout() {
         </div>
       </aside>
 
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 w-full overflow-hidden">
         <header className="bg-white border-b border-slate-200 h-16 flex items-center px-4 lg:px-8 justify-between lg:justify-end shrink-0">
           <button className="lg:hidden text-slate-500 hover:text-slate-700" onClick={() => setIsMobileMenuOpen(true)}>
             <Menu className="w-6 h-6" />
@@ -219,7 +246,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
+        <main className="flex-1 min-w-0 w-full overflow-y-auto p-4 lg:p-8">
           <Outlet />
         </main>
       </div>
