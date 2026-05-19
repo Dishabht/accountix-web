@@ -77,10 +77,10 @@ export default function MonthlyAttendance() {
 
       const employeeId = String(item.employee_id || '');
       const projectId = String(item.project_id || '');
-      const rowId = projectId ? `${employeeId}:${projectId}` : employeeId;
+      const rowId = employeeId;
       const day = date.getDate();
 
-      const existingRow = rowMap.get(rowId) || rowMap.get(employeeId);
+      const existingRow = rowMap.get(rowId);
       const employeeName = item.employee_name || existingRow?.employee || 'Employee';
       const employeeRole = employeeMap.get(employeeId)?.title || existingRow?.role || 'Role';
       const projectName = item.project_name || existingRow?.project || 'N/A';
@@ -90,7 +90,7 @@ export default function MonthlyAttendance() {
             ...existingRow,
             id: rowId,
             employeeId,
-            projectId,
+            projectId: existingRow.projectId || projectId,
             employee: employeeName,
             role: employeeRole,
             project: projectName,
@@ -114,9 +114,7 @@ export default function MonthlyAttendance() {
 
     employees.forEach((employee) => {
       const employeeId = String(employee._id);
-      const hasEmployeeRow = Array.from(rowMap.values()).some((row) => row.employeeId === employeeId);
-
-      if (!hasEmployeeRow) {
+      if (!rowMap.has(employeeId)) {
         rowMap.set(employeeId, {
           id: employeeId,
           employeeId,

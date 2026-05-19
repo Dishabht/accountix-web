@@ -18,6 +18,8 @@ type EmployeeFormData = {
 type EmployeeRow = Employee & {
   supplier_id?: string;
   manager_id?: string;
+  supplier_name?: string;
+  manager_name?: string;
 };
 
 const createEmptyFormData = (): EmployeeFormData => ({
@@ -172,6 +174,30 @@ type EmployeeFormModalProps = {
 
 function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onSubmit, onChange }: EmployeeFormModalProps) {
   if (!isOpen) return null;
+  const [emailFieldName, setEmailFieldName] = useState('');
+  const [passwordFieldName, setPasswordFieldName] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      // For edit forms keep names so existing values show; for add, clear names to avoid autofill
+      if (formData.id) {
+        setEmailFieldName('username');
+        setPasswordFieldName('password');
+      } else {
+        setEmailFieldName('');
+        setPasswordFieldName('');
+      }
+      // If adding a new employee, clear any prefilled values to prevent browser autofill showing on open
+      if (!formData.id) {
+        // clear email and password in parent formData
+        onChange({ ...formData, email: '', password: '' });
+      }
+    } else {
+      // when modal closes, reset internal field-name state so next open isn't affected by autofill
+      setEmailFieldName('');
+      setPasswordFieldName('');
+    }
+  }, [isOpen, formData.id]);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -188,7 +214,7 @@ function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onS
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={onSubmit} className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4" autoComplete="on">
               <div>
                 <label className="block text-sm font-medium text-slate-700">Full Name</label>
                 <input
@@ -203,6 +229,17 @@ function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onS
                 <label className="block text-sm font-medium text-slate-700">Email</label>
                 <input
                   type="email"
+                  name={emailFieldName || undefined}
+                  autoComplete="username"
+                  readOnly
+                  onFocus={(e) => {
+                    if (!emailFieldName) setEmailFieldName('username');
+                    ((e.target as HTMLInputElement).readOnly = false);
+                  }}
+                  onMouseDown={(e) => {
+                    if (!emailFieldName) setEmailFieldName('username');
+                    ((e.target as HTMLInputElement).readOnly = false);
+                  }}
                   required
                   value={formData.email}
                   onChange={(e) => onChange({ ...formData, email: e.target.value })}
@@ -214,6 +251,17 @@ function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onS
                   <label className="block text-sm font-medium text-slate-700">Password</label>
                   <input
                     type="password"
+                    name={passwordFieldName || undefined}
+                    autoComplete="current-password"
+                    readOnly
+                    onFocus={(e) => {
+                      if (!passwordFieldName) setPasswordFieldName('password');
+                      ((e.target as HTMLInputElement).readOnly = false);
+                    }}
+                    onMouseDown={(e) => {
+                      if (!passwordFieldName) setPasswordFieldName('password');
+                      ((e.target as HTMLInputElement).readOnly = false);
+                    }}
                     required
                     value={formData.password}
                     onChange={(e) => onChange({ ...formData, password: e.target.value })}
@@ -387,13 +435,24 @@ export default function Employees() {
     );
   }, [employees, searchTerm]);
 
+  // Count stats:
+  // - total: number of employee records
+  // - managers: prefer `managers.length` (users with role=manager) when available,
+  //   otherwise count unique `manager_id` referenced by employees
+  // - suppliers: count unique `supplier_id` referenced by employees (more reliable than supplier_name)
   const stats = useMemo(() => {
+    const total = employees.length;
+    const managersCount = (Array.isArray(managers) && managers.length > 0)
+      ? managers.length
+      : new Set(employees.map((e) => e.manager_id).filter(Boolean)).size;
+    const suppliersCount = new Set(employees.map((e) => e.supplier_id).filter(Boolean)).size;
+
     return {
-      total: employees.length,
-      managers: employees.filter((e) => isManagerTitle(e.title)).length,
-      suppliers: employees.filter((e) => !!e.supplier_name && e.supplier_name !== 'Direct').length,
+      total,
+      managers: managersCount,
+      suppliers: suppliersCount,
     };
-  }, [employees]);
+  }, [employees, managers]);
 
   const statCards = useMemo(
     () => buildStatCards(stats.total, stats.managers, stats.suppliers),
