@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -132,7 +132,7 @@ export default function MonthlyAttendance() {
     return Array.from(rowMap.values());
   };
 
-  const loadMonthlyAttendance = async () => {
+  const loadMonthlyAttendance = useCallback(async () => {
     if (!token) return;
 
     setIsLoading(true);
@@ -154,11 +154,11 @@ export default function MonthlyAttendance() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, currentMonth]);
 
   useEffect(() => {
     loadMonthlyAttendance();
-  }, [token, currentMonth.getFullYear(), currentMonth.getMonth()]);
+  }, [token, loadMonthlyAttendance]);
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -177,7 +177,7 @@ export default function MonthlyAttendance() {
       window.removeEventListener('attendance:updated', handleRefresh);
       window.removeEventListener('storage', handleStorageRefresh);
     };
-  }, [token, currentMonth.getFullYear(), currentMonth.getMonth()]);
+  }, [token, loadMonthlyAttendance]);
 
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editorSelection, setEditorSelection] = useState<{ rowId: string; day: number | null } | null>(null);

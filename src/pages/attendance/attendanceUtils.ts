@@ -158,5 +158,23 @@ export const buildAttendanceReportRows = ({
     }
   });
 
-  return Array.from(rows.values()).sort((a, b) => b.present + b.absent + b.halfDay + b.leave - (a.present + a.absent + a.halfDay + a.leave));
+  // Preserve the seed order (employees or projects) so UI order doesn't jump when counts change.
+  const ordered: AttendanceRow[] = [];
+  const seen = new Set<string>();
+
+  // add rows in the same order as seedRows
+  seedRows.forEach(([key]) => {
+    const r = rows.get(key);
+    if (r) {
+      ordered.push(r);
+      seen.add(key);
+    }
+  });
+
+  // append any additional rows that were not in the seed (e.g., attendance for unknown items)
+  rows.forEach((r, key) => {
+    if (!seen.has(key)) ordered.push(r);
+  });
+
+  return ordered;
 };
