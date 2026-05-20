@@ -171,6 +171,7 @@ export default function Customers() {
         {canManage && (
           <button 
             onClick={() => navigate('/companies/add')}
+            data-testid="customer-add-button"
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -188,6 +189,7 @@ export default function Customers() {
               <Search className="h-4 w-4 text-slate-400" />
             </div>
             <input
+              data-testid="customer-search"
               type="text"
               className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Search customers..."
@@ -198,6 +200,7 @@ export default function Customers() {
           <div className="flex items-center space-x-2 w-full sm:w-auto">
             <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Status:</label>
             <select
+              data-testid="customer-status-filter"
               className="block w-full sm:w-auto pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -279,6 +282,7 @@ export default function Customers() {
                         <div className="flex justify-end space-x-2">
                           <button 
                             onClick={() => navigate(`/customers/${customer.id}`)}
+                            data-testid={`customer-view-button-${customer.id}`}
                             className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
                             title="View Details"
                           >

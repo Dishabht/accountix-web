@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 interface User {
   id: number;
@@ -11,7 +12,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (token: string, user: User, rememberMe?: boolean) => void;
-  logout: () => void;
+  logout: (message?: string) => void;
   loading: boolean;
 }
 
@@ -26,22 +27,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (token) {
-      fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('Invalid token');
-      })
-      .then(data => {
-        setUser(data.user);
-      })
-      .catch(() => {
-        logout();
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      (async () => {
+        try {
+          const data = await api.get('/auth/me', token);
+          setUser(data.user);
+        } catch (err) {
+          // token invalid or request failed — ensure clean logout
+          logout();
+        } finally {
+          setLoading(false);
+        }
+      })();
     } else {
       setLoading(false);
     }
@@ -61,12 +57,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(newUser);
   };
 
-  const logout = () => {
+  const logout = (message?: string) => {
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
+
+    if (message) {
+      sessionStorage.setItem('auth:flash', message);
+    }
+
     setToken(null);
     setUser(null);
   };
+
+  // Listen for global API unauthorized events (dispatched by `api` client)
+  React.useEffect(() => {
+    const handler = () => {
+      logout('Your session has expired. Please sign in again.');
+      try {
+        // Force navigation to login page
+        window.location.href = '/login';
+      } catch (e) {
+        // noop
+      }
+    };
+
+    window.addEventListener('api:unauthorized', handler);
+    return () => window.removeEventListener('api:unauthorized', handler);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, loading }}>

@@ -147,8 +147,15 @@ export default function Layout() {
   };
 
   const handleSignOut = () => {
-    logout();
-    navigate('/login', { replace: true });
+    logout('You have been signed out.');
+  };
+
+  const getTestIdFromPath = (path: string) => {
+    if (path === '/') {
+      return 'nav-link-dashboard';
+    }
+
+    return `nav-link-${path.replace(/^\//, '').replace(/\//g, '-')}`;
   };
 
   return (
@@ -157,7 +164,7 @@ export default function Layout() {
       <aside className={`fixed inset-y-0 left-0 z-50 w-[85vw] max-w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:relative lg:flex lg:flex-col lg:shrink-0`}>
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-end h-16 px-4 bg-slate-950 shrink-0">
-            <button className="lg:hidden" onClick={() => setIsMobileMenuOpen(false)}>
+            <button data-testid="sidebar-close-button" className="lg:hidden" onClick={() => setIsMobileMenuOpen(false)}>
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -169,6 +176,7 @@ export default function Layout() {
                 <div key={group.name} className="mb-2">
                   <button 
                     onClick={() => toggleGroup(group.name)}
+                    data-testid={`nav-group-toggle-${group.name.toLowerCase().replace(/\s+/g, '-')}`}
                     className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider hover:text-slate-200 transition-colors rounded-lg hover:bg-slate-800/50"
                   >
                     <span>{group.name}</span>
@@ -187,6 +195,7 @@ export default function Layout() {
                           <Link
                             key={item.name}
                             to={item.href}
+                            data-testid={getTestIdFromPath(item.href)}
                             className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                               isActive 
                                 ? 'bg-indigo-600 text-white' 
@@ -215,13 +224,16 @@ export default function Layout() {
                 <p className="text-xs text-slate-400 capitalize">{user.role.replace('_', ' ')}</p>
               </div>
             </div>
-            <button
+            <Link
+              to="/login"
               onClick={handleSignOut}
+              data-testid="sign-out-button"
+              aria-label="Sign out"
               className="flex items-center w-full px-3 py-2 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-colors"
             >
               <LogOut className="mr-3 h-5 w-5 text-slate-400" />
               Sign Out
-            </button>
+            </Link>
           </div>
         </div>
       </aside>
@@ -230,6 +242,7 @@ export default function Layout() {
         <button
           type="button"
           aria-label="Close sidebar"
+          data-testid="sidebar-backdrop"
           className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -238,7 +251,7 @@ export default function Layout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 w-full overflow-hidden">
         <header className="bg-white border-b border-slate-200 h-16 flex items-center px-4 lg:px-8 justify-between lg:justify-end shrink-0">
-          <button className="lg:hidden text-slate-500 hover:text-slate-700" onClick={() => setIsMobileMenuOpen(true)}>
+          <button data-testid="sidebar-open-button" className="lg:hidden text-slate-500 hover:text-slate-700" onClick={() => setIsMobileMenuOpen(true)}>
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center space-x-4">

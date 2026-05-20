@@ -94,6 +94,7 @@ export default function Invoices() {
         {canManage && (
           <button 
             onClick={() => navigate('/invoices/new')}
+            data-testid="invoice-create-button"
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -111,6 +112,7 @@ export default function Invoices() {
               <Search className="h-4 w-4 text-slate-400" />
             </div>
             <input
+              data-testid="invoice-search"
               type="text"
               className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Search invoices..."
@@ -119,6 +121,7 @@ export default function Invoices() {
             />
           </div>
           <select
+            data-testid="invoice-status-filter"
             className="border border-slate-300 rounded-lg text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -182,6 +185,7 @@ export default function Invoices() {
                       <div className="flex justify-end space-x-2">
                         <button 
                           onClick={() => navigate(`/invoices/${invoice.id}`)}
+                          data-testid={`invoice-view-button-${invoice.id}`}
                           className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
                           title="View Invoice"
                         >

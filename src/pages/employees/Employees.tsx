@@ -138,6 +138,7 @@ function EmployeeTable({ loading, employees, canManage, onEdit, onDelete }: Empl
                     <div className="flex justify-end space-x-2">
                       <button
                         onClick={() => onEdit(emp)}
+                        data-testid={`employee-edit-button-${emp.id}`}
                         className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
                         title="Edit Employee"
                       >
@@ -145,6 +146,7 @@ function EmployeeTable({ loading, employees, canManage, onEdit, onDelete }: Empl
                       </button>
                       <button
                         onClick={() => onDelete(emp.id)}
+                        data-testid={`employee-delete-button-${emp.id}`}
                         className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                         title="Delete Employee"
                       >
@@ -218,6 +220,7 @@ function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onS
               <div>
                 <label className="block text-sm font-medium text-slate-700">Full Name</label>
                 <input
+                  data-testid="employee-name"
                   type="text"
                   required
                   value={formData.name}
@@ -228,6 +231,7 @@ function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onS
               <div>
                 <label className="block text-sm font-medium text-slate-700">Email</label>
                 <input
+                  data-testid="employee-email"
                   type="email"
                   name={emailFieldName || undefined}
                   autoComplete="username"
@@ -250,6 +254,7 @@ function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onS
                 <div>
                   <label className="block text-sm font-medium text-slate-700">Password</label>
                   <input
+                    data-testid="employee-password"
                     type="password"
                     name={passwordFieldName || undefined}
                     autoComplete="current-password"
@@ -272,6 +277,7 @@ function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onS
               <div>
                 <label className="block text-sm font-medium text-slate-700">Job Title</label>
                 <input
+                  data-testid="employee-title"
                   type="text"
                   required
                   value={formData.title}
@@ -282,6 +288,7 @@ function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onS
               <div>
                 <label className="block text-sm font-medium text-slate-700">Supplier</label>
                 <select
+                  data-testid="employee-supplier"
                   required
                   value={formData.supplier_id}
                   onChange={(e) => onChange({ ...formData, supplier_id: e.target.value })}
@@ -296,6 +303,7 @@ function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onS
               <div>
                 <label className="block text-sm font-medium text-slate-700">Manager</label>
                 <select
+                  data-testid="employee-manager"
                   required
                   value={formData.manager_id}
                   onChange={(e) => onChange({ ...formData, manager_id: e.target.value })}
@@ -311,12 +319,14 @@ function EmployeeFormModal({ isOpen, formData, suppliers, managers, onClose, onS
                 <button
                   type="button"
                   onClick={onClose}
+                  data-testid="employee-form-cancel"
                   className="bg-white py-2 px-4 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  data-testid="employee-form-submit"
                   className="bg-indigo-600 py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   {formData.id ? 'Update Employee' : 'Save Employee'}
@@ -363,6 +373,7 @@ function DeleteModal({ isOpen, onClose, onConfirm }: DeleteModalProps) {
               <button
                 type="button"
                 onClick={onConfirm}
+                data-testid="employee-delete-confirm"
                 className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
               >
                 Delete
@@ -370,6 +381,7 @@ function DeleteModal({ isOpen, onClose, onConfirm }: DeleteModalProps) {
               <button
                 type="button"
                 onClick={onClose}
+                data-testid="employee-delete-cancel"
                 className="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
               >
                 Cancel
@@ -520,6 +532,7 @@ export default function Employees() {
         {canManage && (
           <button 
             onClick={openAddModal}
+            data-testid="employee-add-button"
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -537,6 +550,7 @@ export default function Employees() {
               <Search className="h-4 w-4 text-slate-400" />
             </div>
             <input
+              data-testid="employee-search"
               type="text"
               className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Search employees..."

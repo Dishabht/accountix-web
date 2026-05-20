@@ -103,6 +103,7 @@ export default function Projects() {
         {canManage && (
           <button 
             onClick={openAddPage}
+            data-testid="project-add-button"
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -120,6 +121,7 @@ export default function Projects() {
               <Search className="h-4 w-4 text-slate-400" />
             </div>
             <input
+              data-testid="project-search"
               type="text"
               className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Search projects..."
@@ -128,6 +130,7 @@ export default function Projects() {
             />
           </div>
           <select
+            data-testid="project-status-filter"
             className="border border-slate-300 rounded-lg text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -205,6 +208,7 @@ export default function Projects() {
                         <div className="flex justify-end space-x-2">
                           <button 
                             onClick={() => openViewPage(project.id)}
+                            data-testid={`project-view-button-${project.id}`}
                             className="text-slate-600 hover:text-slate-900 p-1 rounded hover:bg-slate-100"
                             title="View Project"
                           >

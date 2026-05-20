@@ -12,18 +12,18 @@ async function testHomePage() {
     );
 
     const title = await driver.getTitle();
-    console.log("Titre de la page :", title);
+    console.log("Page title:", title);
 
     const bodyText = await driver
       .findElement(By.tagName("body"))
       .getText();
 
-    console.log("Contenu visible :", bodyText);
+    console.log("Visible content:", bodyText);
 
-    console.log("✅ Test réussi : la page s'ouvre bien");
+    console.log("✅ Test passed: page opened successfully");
 
   } catch (error) {
-    console.error("❌ Test échoué :", error);
+    console.error("❌ Test failed:", error);
 
   } finally {
     await driver.quit();

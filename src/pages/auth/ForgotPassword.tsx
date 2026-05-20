@@ -37,18 +37,18 @@ export default function ForgotPassword() {
       <div className="lg:w-1/2 py-8 px-6 flex flex-col justify-center">
         <div className="lg:max-w-[464px] mx-auto w-full">
           <div>
-            <Link to="/login" className="mb-3 inline-flex items-center gap-3">
+            <Link data-testid="forgot-password-brand-link" to="/login" className="mb-3 inline-flex items-center gap-3">
               <span className="text-xl font-semibold tracking-tight text-slate-900">Accountability</span>
             </Link>
-            <h2 className="text-3xl font-bold text-slate-900">Forgot Password</h2>
-            <p className="mt-2 text-slate-500 text-base">
+            <h2 data-testid="forgot-password-title" className="text-3xl font-bold text-slate-900">Forgot Password</h2>
+            <p data-testid="forgot-password-subtitle" className="mt-2 text-slate-500 text-base">
               Enter the email address associated with your account and we will send you a link to reset your password.
             </p>
           </div>
 
           <form className="mt-8" onSubmit={handleSubmit}>
             {error && (
-              <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              <div data-testid="forgot-password-error" className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
@@ -56,6 +56,7 @@ export default function ForgotPassword() {
             <div className="relative">
               <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
               <input
+                data-testid="forgot-password-email"
                 type="email"
                 required
                 value={email}
@@ -69,6 +70,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={loading}
+              data-testid="forgot-password-button"
               className="w-full rounded-lg h-[52px] text-sm mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium disabled:opacity-60 flex items-center justify-center"
             >
               {loading && <Loader2 className="animate-spin h-4.5 w-4.5 mr-2" />}
@@ -77,7 +79,7 @@ export default function ForgotPassword() {
 
             <p className="mt-8 text-center text-sm text-slate-500">
               Remembered your password?{' '}
-              <Link to="/login" className="text-indigo-600 font-semibold hover:underline">
+              <Link data-testid="forgot-password-login-link" to="/login" className="text-indigo-600 font-semibold hover:underline">
                 Back to Sign In
               </Link>
             </p>

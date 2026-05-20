@@ -53,16 +53,16 @@ export default function Register() {
       <div className="lg:w-1/2 py-8 px-6 flex flex-col justify-center">
         <div className="lg:max-w-[464px] mx-auto w-full">
           <div>
-            <Link to="/login" className="mb-3 inline-flex items-center gap-3">
+            <Link data-testid="register-brand-link" to="/login" className="mb-3 inline-flex items-center gap-3">
               <span className="text-xl font-semibold tracking-tight text-slate-900">Accountability</span>
             </Link>
-            <h2 className="text-3xl font-bold text-slate-900">Sign up to your Account</h2>
-            <p className="mt-2 text-slate-500 text-base">Welcome back! Please enter your details</p>
+            <h2 data-testid="register-title" className="text-3xl font-bold text-slate-900">Sign up to your Account</h2>
+            <p data-testid="register-subtitle" className="mt-2 text-slate-500 text-base">Welcome back! Please enter your details</p>
           </div>
 
           <form className="mt-8" onSubmit={handleSubmit}>
             {error && (
-              <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              <div data-testid="register-error" className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
@@ -71,6 +71,7 @@ export default function Register() {
               <div className="relative">
                 <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
+                  data-testid="register-name"
                   type="text"
                   required
                   value={name}
@@ -84,6 +85,7 @@ export default function Register() {
               <div className="relative">
                 <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
+                  data-testid="register-email"
                   type="email"
                   required
                   value={email}
@@ -97,6 +99,7 @@ export default function Register() {
               <div className="relative">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
+                  data-testid="register-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
@@ -108,6 +111,7 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
+                  data-testid="register-password-toggle"
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
@@ -118,6 +122,7 @@ export default function Register() {
               <div className="relative">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
+                  data-testid="register-confirm-password"
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
                   value={confirmPassword}
@@ -129,6 +134,7 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  data-testid="register-confirm-password-toggle"
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
                   aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
@@ -140,6 +146,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
+              data-testid="register-button"
               className="w-full rounded-lg h-[52px] text-sm mt-8 bg-indigo-600 hover:bg-indigo-700 text-white font-medium disabled:opacity-60 flex items-center justify-center"
             >
               {loading && <Loader2 className="animate-spin h-4.5 w-4.5 mr-2" />}
@@ -148,7 +155,7 @@ export default function Register() {
 
             <p className="mt-8 text-center text-sm text-slate-500">
               Already have an account?{' '}
-              <Link to="/login" className="text-indigo-600 font-semibold hover:underline">
+              <Link data-testid="register-signin-link" to="/login" className="text-indigo-600 font-semibold hover:underline">
                 Sign In
               </Link>
             </p>

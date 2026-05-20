@@ -100,6 +100,7 @@ export default function Dashboard() {
     { name: 'Week 3', revenue: 1100, expenses: 700 },
     { name: 'Week 4', revenue: 1800, expenses: 1100 },
   ];
+  
 
   const projectStatusData = [
     { name: 'Active', value: 400 },
@@ -123,7 +124,7 @@ export default function Dashboard() {
     { name: 'Thu', present: 43, absent: 4 },
     { name: 'Fri', present: 40, absent: 7 },
   ];
-
+  
   const revenueData = timeRange === 'monthly' ? monthlyRevenueData : weeklyRevenueData;
   const attendanceData = timeRange === 'monthly' ? monthlyAttendanceData : weeklyAttendanceData;
 
@@ -262,32 +263,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!token) return;
+    (async () => {
+      try {
+        const statsData = await (await import('../services/api')).api.get('/dashboard/stats', token);
+        setStats(statsData);
+      } catch (err) {
+        console.error('Stats fetch error:', err);
+      }
 
-    fetch('/api/dashboard/stats', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`Stats error: ${res.status}`);
-        return res.json();
-      })
-      .then(data => setStats(data))
-      .catch(error => {
-        console.error('Stats fetch error:', error);
-        // Garder les données par défaut
-      });
-
-    fetch('/api/dashboard/charts', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`Charts error: ${res.status}`);
-        return res.json();
-      })
-      .then(data => setCharts(data))
-      .catch(error => {
-        console.error('Charts fetch error:', error);
-        // Garder les données par défaut
-      });
+      try {
+        const chartsData = await (await import('../services/api')).api.get('/dashboard/charts', token);
+        setCharts(chartsData);
+      } catch (err) {
+        console.error('Charts fetch error:', err);
+      }
+    })();
   }, [token]);
 
   const demoEmployeeDistribution = [
@@ -440,13 +430,13 @@ export default function Dashboard() {
           <p className="text-neutral-500 mt-1">Key metrics and trends at a glance.</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex bg-white border border-neutral-200 rounded-lg p-1">
+          <div className="flex bg-white border border-neutral-200 rounded-lg p-1 gap-1">
             <button
               onClick={() => setTimeRange('weekly')}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                 timeRange === 'weekly' 
-                  ? 'bg-primary text-white' 
-                  : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                  ? 'bg-indigo-600 text-white shadow-md' 
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-indigo-50'
               }`}
             >
               Weekly
@@ -455,12 +445,13 @@ export default function Dashboard() {
               onClick={() => setTimeRange('monthly')}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                 timeRange === 'monthly' 
-                  ? 'bg-primary text-white' 
-                  : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                  ? 'bg-indigo-600 text-white shadow-md' 
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-indigo-50'
               }`}
             >
               Monthly
             </button>
+            {/* Yearly removed - only Weekly/Monthly supported */}
           </div>
           <div className="text-sm text-neutral-500 bg-white px-3 py-1.5 rounded-lg border border-neutral-200">
             Last updated: {new Date().toLocaleDateString()}

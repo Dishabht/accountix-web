@@ -12,7 +12,9 @@
     "test:home": "node tests/home.test.js",
     "test:login": "node tests/login.test.js",
     "test:navigation": "node tests/navigation.test.js",
-    "test:form": "node tests/form-validation.test.js"
+    "test:form": "node tests/form-validation.test.js",
+    "test:selenium": "npm run test:login",
+    "test:selenium:all": "npm run test:login && npm run test:home && npm run test:navigation && npm run test:form"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
