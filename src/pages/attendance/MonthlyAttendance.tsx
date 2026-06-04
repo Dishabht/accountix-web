@@ -54,6 +54,10 @@ export default function MonthlyAttendance() {
 
   const calendarDaysWithInitials = getCalendarDaysWithInitials();
 
+  // Auto-fill/comments: only apply auto-fill logic for months on-or-after this start date
+  const AUTO_FILL_START_YEAR = 2026;
+  const AUTO_FILL_START_MONTH = 4; // May (0-based)
+
   const buildRowsForMonth = (employees: EmployeeItem[], attendance: AttendanceItem[]) => {
     const rowMap = new Map<string, AttendanceRow>();
     const month = currentMonth.getMonth();
@@ -185,7 +189,7 @@ export default function MonthlyAttendance() {
 
   const openEditor = (rowId: string, day: number | null) => {
     if (!day) return;
-    const row = attendanceData.find((item) => item.id === rowId);
+    const row = attendanceData.find((item: AttendanceRow) => item.id === rowId);
     setEditorSelection({ rowId, day });
     // if the stored status is cleared marker 'C', open editor with empty selection
     const stored = row && row.records[day];
@@ -202,7 +206,7 @@ export default function MonthlyAttendance() {
     if (!editorSelection) return;
     (async () => {
       const selection = editorSelection;
-      const row = attendanceData.find((r) => r.id === selection.rowId);
+      const row = attendanceData.find((r: AttendanceRow) => r.id === selection.rowId);
       if (!row) return closeEditor();
 
       const year = currentMonth.getFullYear();
@@ -216,7 +220,7 @@ export default function MonthlyAttendance() {
 
       try {
         // find existing attendance record for this employee/project/date
-        const existing = attendanceRaw.find((a) => {
+        const existing = attendanceRaw.find((a: AttendanceItem) => {
           const d = new Date(a.date);
           if (Number.isNaN(d.getTime())) return false;
           return (
@@ -340,7 +344,7 @@ export default function MonthlyAttendance() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {attendanceData.map((row) => (
+              {attendanceData.map((row: AttendanceRow) => (
                 <tr key={row.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-3 sticky left-0 bg-white z-10 border-r border-slate-200">
                     <div className="flex flex-col">
@@ -356,22 +360,24 @@ export default function MonthlyAttendance() {
                   {calendarDaysWithInitials.map((item, index) => {
                     const rawStatus = row.records[item.day]; // could be 'P','A','H','L','C' or undefined
                     const today = new Date();
+                    const year = currentMonth.getFullYear();
+                    const month = currentMonth.getMonth();
                     const isCurrentMonth = currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth();
-                    // do not auto-present if status explicitly cleared ('C')
+                    const isPastMonth = year < today.getFullYear() || (year === today.getFullYear() && month < today.getMonth());
+                    const isFutureMonth = year > today.getFullYear() || (year === today.getFullYear() && month > today.getMonth());
+                    const isOnOrAfterAutoFillStart = year > AUTO_FILL_START_YEAR || (year === AUTO_FILL_START_YEAR && month >= AUTO_FILL_START_MONTH);
+                    const shouldAutoPresent =
+                      rawStatus == null &&
+                      !item.isWeekend &&
+                      !isFutureMonth &&
+                      isOnOrAfterAutoFillStart &&
+                      (isPastMonth || (isCurrentMonth && item.day <= today.getDate()));
                     const isCleared = rawStatus === 'C';
-                    const shouldAutoPresent = rawStatus == null && !item.isWeekend && isCurrentMonth && item.day <= today.getDate();
                     const displayStatus = isCleared ? null : (rawStatus ?? (shouldAutoPresent ? 'P' : null));
 
                     return (
                       <td key={index} className={`px-1 py-3 text-center ${item.isWeekend ? 'bg-slate-100/40' : ''}`}>
-                        {isCleared ? (
-                          <button
-                            onClick={() => openEditor(row.id, item.day)}
-                            className="w-8 h-8 rounded flex items-center justify-center text-xs font-medium mx-auto bg-slate-50 text-slate-300 hover:bg-slate-100"
-                          >
-                            -
-                          </button>
-                        ) : displayStatus ? (
+                        {displayStatus ? (
                           <button
                             onClick={() => openEditor(row.id, item.day)}
                             className={`w-8 h-8 rounded flex items-center justify-center text-xs font-medium mx-auto ${getStatusColor(displayStatus)}`}

@@ -134,6 +134,11 @@ export const buildAttendanceReportRows = ({
 
   const today = new Date();
   const isCurrentMonth = currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth();
+  const isPastMonth = currentMonth.getFullYear() < today.getFullYear() || (currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() < today.getMonth());
+  const isFutureMonth = currentMonth.getFullYear() > today.getFullYear() || (currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() > today.getMonth());
+  const AUTO_FILL_START_YEAR = 2026;
+  const AUTO_FILL_START_MONTH = 4; // May (0-based)
+  const isOnOrAfterAutoFillStart = currentMonth.getFullYear() > AUTO_FILL_START_YEAR || (currentMonth.getFullYear() === AUTO_FILL_START_YEAR && currentMonth.getMonth() >= AUTO_FILL_START_MONTH);
   const lastDayToConsider = isCurrentMonth ? today.getDate() : new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
 
   rows.forEach((row, key) => {
@@ -152,7 +157,7 @@ export const buildAttendanceReportRows = ({
         continue;
       }
 
-      if (isCurrentMonth && day <= today.getDate()) {
+      if (!isFutureMonth && isOnOrAfterAutoFillStart && (isPastMonth || (isCurrentMonth && day <= today.getDate()))) {
         row.present += 1;
       }
     }
