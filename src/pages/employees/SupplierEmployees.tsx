@@ -89,8 +89,8 @@ export default function SupplierEmployees() {
       <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-          <div className="relative w-64">
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50">
+          <div className="relative w-full sm:w-64">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-slate-400" />
             </div>
@@ -102,15 +102,18 @@ export default function SupplierEmployees() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select
-            className="border border-slate-300 rounded-lg text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="All">All Statuses</option>
-            <option value="Active">Active</option>
-            <option value="Draft">Draft</option>
-          </select>
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Status:</label>
+            <select
+              className="block w-full sm:w-auto pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Draft">Draft</option>
+            </select>
+          </div>
         </div>
         
         <div className="overflow-x-auto">

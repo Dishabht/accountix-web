@@ -111,8 +111,8 @@ export default function QuotationList() {
       />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-          <div className="relative w-64">
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
@@ -122,17 +122,20 @@ export default function QuotationList() {
               className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
             />
           </div>
-          <select
-            className="border border-slate-300 rounded-lg text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="All">All Statuses</option>
-            <option value="Draft">Draft</option>
-            <option value="Sent">Sent</option>
-            <option value="Accepted">Accepted</option>
-            <option value="Rejected">Rejected</option>
-          </select>
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Status:</label>
+            <select
+              className="block w-full sm:w-auto pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Draft">Draft</option>
+              <option value="Sent">Sent</option>
+              <option value="Accepted">Accepted</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -143,7 +146,7 @@ export default function QuotationList() {
                 <th className="px-6 py-4 text-sm font-semibold text-slate-900">Rate Details</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-900">Total Amount</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-900">Status</th>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-900 text-right">Actions</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-900 text-right w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -197,10 +200,12 @@ export default function QuotationList() {
                         {quote.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link to={`/quotations/${quote.id}`} className="text-indigo-600 hover:text-indigo-900" title="View Details">
-                        <Eye className="w-5 h-5" />
-                      </Link>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex justify-end">
+                        <Link to={`/quotations/${quote.id}`} className="text-indigo-600 hover:text-indigo-900" title="View Details">
+                          <Eye className="w-5 h-5" />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );})

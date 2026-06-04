@@ -54,10 +54,17 @@ export interface Invoice {
   id: string;
   customer_id: string;
   customer_name?: string;
+  project_id?: string;
+  description?: string;
+  rate?: number;
+  duration?: number;
+  rate_type?: 'hourly' | 'daily';
   amount: number;
   status: 'draft' | 'sent' | 'paid';
   issue_date: string;
   due_date: string;
+  paid_date?: string;
+  quotation_ref?: string;
 }
 
 export interface Quotation {

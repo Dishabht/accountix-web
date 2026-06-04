@@ -1,10 +1,18 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Invoice } from '../../types';
 import { Plus, Search, Eye, FileText, CheckCircle2, Send, Clock } from 'lucide-react';
 import { MetricsWidgets, type DashpanelCardData } from '../../components/dashpanel';
+
+function toInvNum(id: string, issueDate?: string): string {
+  const year    = issueDate ? new Date(issueDate).getFullYear() : new Date().getFullYear();
+  const cleaned = (id ?? '').replace(/[^0-9a-f]/gi, '');
+  const hex     = cleaned.slice(-6) || '000000';
+  const num     = (parseInt(hex, 16) % 9000) + 1000;
+  return `INV-${year}-${String(num).padStart(4, '0')}`;
+}
 
 export default function Invoices() {
   const { token, user } = useAuth();
@@ -106,8 +114,8 @@ export default function Invoices() {
       <MetricsWidgets cardsData={statCards} />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-          <div className="relative w-64">
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50">
+          <div className="relative w-full sm:w-64">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-slate-400" />
             </div>
@@ -120,17 +128,20 @@ export default function Invoices() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select
-            data-testid="invoice-status-filter"
-            className="border border-slate-300 rounded-lg text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="All">All Statuses</option>
-            <option value="paid">Paid</option>
-            <option value="sent">Sent</option>
-            <option value="draft">Draft</option>
-          </select>
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Status:</label>
+            <select
+              data-testid="invoice-status-filter"
+              className="block w-full sm:w-auto pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              <option value="paid">Paid</option>
+              <option value="sent">Sent</option>
+              <option value="draft">Draft</option>
+            </select>
+          </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -159,7 +170,7 @@ export default function Invoices() {
                 filteredInvoices.map((invoice, index) => (
                   <tr key={invoice.id ?? `row-${index}`} className="hover:bg-slate-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-900">INV-{String(invoice.id ?? '').padStart(4, '0')}</div>
+                      <div className="text-sm font-medium text-slate-900">{toInvNum(invoice.id ?? '', invoice.issue_date)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{invoice.customer_name || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">${Number(invoice.amount || 0).toLocaleString()}</td>
@@ -169,15 +180,25 @@ export default function Invoices() {
                       {(() => {
                         const invoiceStatus = (invoice.status || 'draft').toLowerCase();
                         const statusLabel = invoiceStatus.charAt(0).toUpperCase() + invoiceStatus.slice(1);
+                        const today = new Date(); today.setHours(0, 0, 0, 0);
+                        const due = invoice.due_date ? new Date(invoice.due_date) : null;
+                        const overdue = invoiceStatus === 'sent' && due !== null && due < today;
 
                         return (
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        invoiceStatus === 'paid' ? 'bg-green-100 text-green-800' : 
-                        invoiceStatus === 'sent' ? 'bg-blue-100 text-blue-800' : 
-                        'bg-slate-100 text-slate-800'
-                      }`}>
-                        {statusLabel}
-                      </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              invoiceStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                              invoiceStatus === 'sent' ? 'bg-blue-100 text-blue-800' :
+                              'bg-slate-100 text-slate-800'
+                            }`}>
+                              {statusLabel}
+                            </span>
+                            {overdue && (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-700">
+                                Overdue
+                              </span>
+                            )}
+                          </div>
                         );
                       })()}
                     </td>
