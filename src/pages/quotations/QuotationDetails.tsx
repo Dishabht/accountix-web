@@ -50,7 +50,7 @@ export default function QuotationDetails() {
   const [loading, setLoading]     = useState(true);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isPdfOpen, setIsPdfOpen]       = useState(false);
-  const [converting, setConverting]     = useState(false);
+
 
   useEffect(() => {
     fetch(`/api/quotations/${id}`, {
@@ -76,49 +76,8 @@ export default function QuotationDetails() {
   const serviceDesc = quotation.project_name
     ? `Services — ${quotation.project_name}`
     : 'Professional Services';
-  const currentStep    = stepIdx(quotation.status);
-  const hasInvoice     = !!(quotation.invoice_id ?? quotation.invoiced ?? false);
-  // 4 visual positions (0–3): Draft → Sent → Accepted → Invoiced
-  const visualProgress = hasInvoice ? 3 : currentStep;
+  const currentStep = stepIdx(quotation.status);
 
-  const handleConvertToInvoice = async () => {
-    setConverting(true);
-    try {
-      const today   = new Date();
-      const dueDate = new Date(today);
-      dueDate.setDate(dueDate.getDate() + 30);
-
-      const res = await fetch('/api/invoices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          customer_id:   quotation.customer_id  ?? quotation.customerId,
-          project_id:    quotation.project_id   ?? quotation.projectId,
-          description:   quotation.project_name ?? quotation.projectName ?? '',
-          rate:          rate,
-          duration:      duration,
-          rate_type:     quotation.rate_type ?? 'hourly',
-          amount:        totalAmount,
-          status:        'sent',
-          issue_date:    today.toISOString().split('T')[0],
-          due_date:      dueDate.toISOString().split('T')[0],
-          quotation_ref: quotation._id ?? quotation.id,
-        }),
-      });
-
-      if (res.ok) {
-        const created = await res.json();
-        navigate(`/invoices/${created.id}`);
-      } else {
-        const e = await res.json();
-        alert(`Error: ${e.error}`);
-      }
-    } catch {
-      alert('Failed to create invoice');
-    } finally {
-      setConverting(false);
-    }
-  };
 
   const handleDelete = async () => {
     try {
@@ -284,15 +243,6 @@ export default function QuotationDetails() {
             Preview &amp; Export PDF
           </button>
 
-          {quotation.status?.toLowerCase() === 'accepted' && canManage && (
-            <button
-              onClick={handleConvertToInvoice}
-              disabled={converting}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-violet-600 rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors"
-            >
-              {converting ? 'Creating…' : 'Convert to Invoice'}
-            </button>
-          )}
 
           {canManage && (
             <>
@@ -339,18 +289,17 @@ export default function QuotationDetails() {
 
         {/* Section 2 — Status timeline */}
         <div className="relative">
-          {/* Gray track across all 4 visual positions */}
+          {/* Gray track across all 3 steps */}
           <div
             className="absolute top-3 h-0.5 bg-slate-200"
             style={{ left: 12, right: 12, zIndex: 0 }}
           />
-          {/* Green progress — visualProgress / 3 covers 4 positions (0–3) */}
-          {visualProgress > 0 && (
+          {currentStep > 0 && (
             <div
               className="absolute top-3 h-0.5 bg-emerald-500 transition-all"
               style={{
                 left: 12,
-                width: `calc((100% - 24px) * ${visualProgress / 3})`,
+                width: `calc((100% - 24px) * ${currentStep / (STEPS.length - 1)})`,
                 zIndex: 0,
               }}
             />
@@ -362,7 +311,7 @@ export default function QuotationDetails() {
               const done    = i < currentStep;
               const current = i === currentStep;
               return (
-                <div key={step} className="flex flex-col items-center">
+                <div key={step} className="flex flex-col items-center w-6 overflow-visible">
                   <div
                     className={`w-6 h-6 rounded-full flex items-center justify-center ${
                       done    ? 'bg-emerald-500' :
@@ -375,7 +324,7 @@ export default function QuotationDetails() {
                     )}
                   </div>
                   <span
-                    className={`mt-2 text-xs font-medium ${
+                    className={`mt-2 text-xs font-medium whitespace-nowrap ${
                       done    ? 'text-emerald-600' :
                       current ? 'text-violet-700'  :
                                 'text-slate-400'
@@ -387,19 +336,6 @@ export default function QuotationDetails() {
               );
             })}
 
-            {/* Visual-only "Invoiced" indicator — read-only, not a real status */}
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                  hasInvoice ? 'bg-emerald-500' : 'bg-slate-200'
-                }`}
-              >
-                {hasInvoice && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-              </div>
-              <span className={`mt-2 text-xs font-medium ${hasInvoice ? 'text-emerald-600' : 'text-slate-400'}`}>
-                Invoiced
-              </span>
-            </div>
           </div>
         </div>
 

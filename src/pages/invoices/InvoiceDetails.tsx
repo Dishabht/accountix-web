@@ -25,10 +25,12 @@ function fmtMoney(n?: number): string {
   return (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-const STEPS = ['Sent', 'Paid'] as const;
+const STEPS = ['Draft', 'Sent', 'Paid'] as const;
 
 function stepIdx(status: string): number {
-  return status === 'paid' ? 1 : 0;
+  if (status === 'paid') return 2;
+  if (status === 'sent') return 1;
+  return 0;
 }
 
 export default function InvoiceDetails() {
@@ -324,8 +326,12 @@ export default function InvoiceDetails() {
           />
           {currentStep > 0 && (
             <div
-              className="absolute top-3 h-0.5 bg-emerald-500"
-              style={{ left: 12, right: 12, zIndex: 0 }}
+              className="absolute top-3 h-0.5 bg-emerald-500 transition-all"
+              style={{
+                left: 12,
+                width: `calc((100% - 24px) * ${currentStep / (STEPS.length - 1)})`,
+                zIndex: 0,
+              }}
             />
           )}
           <div className="relative flex justify-between" style={{ zIndex: 1 }}>
@@ -333,7 +339,7 @@ export default function InvoiceDetails() {
               const done    = i < currentStep;
               const current = i === currentStep;
               return (
-                <div key={step} className="flex flex-col items-center">
+                <div key={step} className="flex flex-col items-center w-6 overflow-visible">
                   <div
                     className={`w-6 h-6 rounded-full flex items-center justify-center ${
                       done || current ? 'bg-emerald-500' : 'bg-slate-200'
@@ -341,7 +347,7 @@ export default function InvoiceDetails() {
                   >
                     {(done || current) && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                   </div>
-                  <span className={`mt-2 text-xs font-medium ${
+                  <span className={`mt-2 text-xs font-medium whitespace-nowrap ${
                     done || current ? 'text-emerald-600' : 'text-slate-400'
                   }`}>
                     {step}
