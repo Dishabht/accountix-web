@@ -87,7 +87,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, loading }}>
-      {children}
+      {/* Wait for the stored session to be checked before rendering routes */}
+      {loading ? null : children}
     </AuthContext.Provider>
   );
 };
