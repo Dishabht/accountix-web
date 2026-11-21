@@ -7,6 +7,8 @@
     "dev": "vite",
     "start": "vite",
     "build": "vite build",
+    "build:demo": "VITE_DEMO_MODE=true vite build",
+    "dev:demo": "VITE_DEMO_MODE=true vite",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test:home": "node tests/home.test.js",

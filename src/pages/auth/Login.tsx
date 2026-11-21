@@ -2,7 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, PlayCircle } from 'lucide-react';
+
+const isDemoMode = (import.meta as any).env?.VITE_DEMO_MODE === 'true';
+const DEMO_EMAIL = 'admin@portal.com';
+const DEMO_PASSWORD = 'admin123';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -45,14 +49,13 @@ export default function Login() {
     };
   }, [location.state]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const signIn = async (loginEmail: string, loginPassword: string) => {
     setError('');
     setLoading(true);
 
     try {
       // Call centralized API service instead of direct fetch
-      const data = await api.post('/auth/login', null, { email, password });
+      const data = await api.post('/auth/login', null, { email: loginEmail, password: loginPassword });
 
       if (!data || data.error) {
         throw new Error(data?.error || 'Login failed');
@@ -66,6 +69,17 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    signIn(email, password);
+  };
+
+  const handleDemoAccess = () => {
+    setEmail(DEMO_EMAIL);
+    setPassword(DEMO_PASSWORD);
+    signIn(DEMO_EMAIL, DEMO_PASSWORD);
   };
 
   return (
@@ -95,6 +109,25 @@ export default function Login() {
             <h2 data-testid="login-title" className="text-3xl font-bold text-slate-900">Sign In to your Account</h2>
             <p data-testid="login-subtitle" className="mt-2 text-slate-500 text-base">Welcome back! please enter your detail</p>
           </div>
+
+          {isDemoMode && (
+            <div data-testid="demo-banner" className="mt-6 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-4">
+              <p className="text-sm font-semibold text-indigo-900">Demo version</p>
+              <p className="mt-1 text-sm text-indigo-800">
+                This live demo runs on sample data. Sign in with <span className="font-mono">{DEMO_EMAIL}</span> / <span className="font-mono">{DEMO_PASSWORD}</span>, or:
+              </p>
+              <button
+                type="button"
+                onClick={handleDemoAccess}
+                disabled={loading}
+                data-testid="demo-access-button"
+                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+              >
+                <PlayCircle className="h-4 w-4" />
+                Explore the demo
+              </button>
+            </div>
+          )}
 
           <form className="mt-8" onSubmit={handleSubmit} autoComplete="on">
             {error && (
